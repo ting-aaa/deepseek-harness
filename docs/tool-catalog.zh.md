@@ -40,6 +40,7 @@
 | `@deepseek-ai/dsh-tool-goal` | `create_goal`、`get_goal`、`update_goal` | `ctx.tools`、`ctx.agents`、`ctx.goals`、`ctx.systemPrompt`、`a calling Agent in an authorized open turn` | `tool/call`、`goal/change for mutations`、`tool/result` | - | create、edit、pause 和 resume 要求直接来自人类的根权限；complete 和 blocked 也接受确切的当前 Goal Round。blocked 的默认下限是 3 个获准的 Round。 |
 | `@deepseek-ai/dsh-tool-schedule` | `schedule_create`、`schedule_delete`、`schedule_list`、`schedule_update` | `ctx.tools`、`ctx.schedule` | `tool/call`、Schedule storage domain 创建、更新或删除、`tool/result` | - | preset 或 Agent scope 挂载本包；由 preset 决定哪些 agent 获得这四个管理工具。每次调用都作用于调用方 Agent 的 Session。接受 after_seconds、显式绝对 at、有界固定速率 every_seconds、带显式 IANA 时区的每日与每周本地时间，以及作为五字段表达式的 cron。管理使用宿主 storage domain；到期消息会恢复原 Session。 |
 | `@deepseek-ai/dsh-tool-lsp` | `lsp` | `ctx.workingDirectory`、`ctx.tools`、`ctx.lsp`、`ctx.systemPrompt` | `tool/call`、`tool/result` | - | lsp 工具将提供方选择和语言服务器子进程置于 ctx.lsp 之后，因此其模型可见 schema 在更换提供方时保持稳定。运行时要求已注册提供方，例如 `@deepseek-ai/dsh-lsp-stdio`；如果没有提供方，查询会返回结构化 `LSP_UNAVAILABLE` 错误，而不会改变 schema。 |
+| `@deepseek-ai/dsh-experimental-tool-harness2` | `harness2`, `harness2_remember` | `ctx.tools`, `ctx.harness2`, `a calling Agent` | `tool/call`, `tool/result`, `plugin:harness2/*`, `child Sessions`, `Harness² preview and lesson storage` | - | 仅通过显式实验组合加载。受限递归子会话运行比较候选范围内的资源；独立审批工具采纳模式／领域指导，不改变父会话策略或提示词。 |
 | `@deepseek-ai/dsh-tool-ralph` | `ralph` | `ctx.tools`、`ctx.workflowEngine`、`ctx.subagents`、`ctx.systemPrompt`、`a calling Agent (exec.agent parents every fresh round)` | `tool/call`、`tool/result`、`workflow and child session events during execution` | - | 固定的前台工作流会在每个 Round 启动一个全新的结构化子级；模型只能选择不可变目标和可选的 Round 上限。 |
 | `@deepseek-ai/dsh-tool-skill` | `skill` | `ctx.workingDirectory`、`ctx.tools`、`ctx.agents`、`ctx.skills` | `tool/call`、`tool/result`、`user/message replacement catalogs via agent.inject()` | - | - |
 | `@deepseek-ai/dsh-tool-session-query` | `session_event_read`、`session_event_search`、`session_event_trace`、`session_search`、`session_trace` | `ctx.tools`、`ctx.systemPrompt`、`ctx.sessionQuery`、`a calling Agent for workspace authority` | `tool/call`、`tool/result` | - | 这 5 个只读工具会隐藏提供方游标，并根据不可变的调用 agent 会话为每个结果授权。该包需要选择启用；需要强制截止时间或限制行内输出的组合还会挂载通用超时或 spill 策略。 |
@@ -1821,6 +1822,75 @@ preset 或 Agent scope 挂载本包；由 preset 决定哪些 agent 获得这四
 来源：[`packages/lsp/tool-lsp/src/index.ts`](../packages/lsp/tool-lsp/src/index.ts)
 
 lsp 工具将提供方选择和语言服务器子进程置于 ctx.lsp 之后，因此其模型可见 schema 在更换提供方时保持稳定。运行时要求已注册提供方，例如 `@deepseek-ai/dsh-lsp-stdio`；如果没有提供方，查询会返回结构化 `LSP_UNAVAILABLE` 错误，而不会改变 schema。
+
+<a id="deepseek-aidsh-experimental-tool-harness2"></a>
+
+## `@deepseek-ai/dsh-experimental-tool-harness2`
+
+### `harness2`
+
+仅当用户明确要求 Harness² 或 harness 优化时，预览受限 Harness² 提案—探测—组合实验。执行受限并行或顺序递归，阶段持久保存并可恢复。以文本提供任务材料；子会话只能使用候选范围内的资源，隔离执行还要求部署支持与审批。返回答案、候选指令、反思和证据会话 id。这不会验证正确性或采纳候选。调用 harness2_remember 前先向用户展示预览。
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "task": {
+      "type": "string",
+      "description": "Complete text task and source material, without secrets."
+    },
+    "domain": {
+      "type": "string",
+      "description": "Stable domain-library key; only explicitly remembered guidance from this domain is reused."
+    },
+    "mode": {
+      "type": "string",
+      "description": "Independent parallel compositions or sequential refinement with growing history.",
+      "enum": [
+        "parallel",
+        "sequential"
+      ]
+    },
+    "k": {
+      "type": "integer",
+      "description": "Width or depth, within deployment limits; 4k rollouts and 3k improvement stages."
+    },
+    "resumeRunId": {
+      "type": "string",
+      "description": "Resume the same task and settings from durable stage checkpoints."
+    }
+  },
+  "required": [
+    "task",
+    "domain"
+  ]
+}
+```
+
+来源： [`packages/experimental/tool-harness2/src/index.ts`](../packages/experimental/tool-harness2/src/index.ts)
+
+### `harness2_remember`
+
+仅在用户明确批准保存该预览后，保存已评审的 Harness² 预览。预览必须归属于此会话，并使用当前领域经验库修订。它影响后续同领域 Harness² 实验，不影响当前对话、权限、工具或全局提示词。
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "runId": {
+      "type": "string",
+      "description": "Run id of the preview the user approved."
+    }
+  },
+  "required": [
+    "runId"
+  ]
+}
+```
+
+来源： [`packages/experimental/tool-harness2/src/index.ts`](../packages/experimental/tool-harness2/src/index.ts)
+
+仅通过显式实验组合加载。受限递归子会话运行比较候选范围内的资源；独立审批工具采纳模式／领域指导，不改变父会话策略或提示词。
 
 <a id="deepseek-aidsh-experimental-tool-ralph"></a>
 

@@ -1,0 +1,11 @@
+- insert:
+    - id: optional-harness2
+      name: '@deepseek-ai/dsh-experimental-harness2'
+      config:
+        provider: spawn
+        maxConcurrentRuns: 1
+        childTimeoutMs: 120000
+        maxStepsPerChild: 4
+        maxTokensPerChild: 4096
+    - id: optional-tool-harness2
+      name: '@deepseek-ai/dsh-experimental-tool-harness2'

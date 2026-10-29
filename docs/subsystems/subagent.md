@@ -35,6 +35,11 @@ interface SubagentActivationSpec {
   readonly label: string
   /** Optional reserved identity for a local child; external backends allocate their own ids. */
   readonly childId?: SessionId
+  /**
+   * Run a local child without accepting follow-up input or cold resume. Omitted
+   * or false keeps local children continuable; external runs are already one-shot.
+   */
+  readonly oneShot?: boolean
   /** Task, parent, and backend-supported execution options. */
   readonly request: Omit<SubagentStartRequest, 'label' | 'signal'>
   /** Cancellation before publication; callers own later cancellation through dispose. */
@@ -129,7 +134,7 @@ interface ResolvedSubagentStartRequest extends SubagentStartRequest {
 
 Spawn alone supports an independent `agentPreset`; omission and fork inherit the parent's active composition. The [child preset rules](../../packages/subagent/subagent/README.md#restoring-child-composition) define explicit selection, event ordering, and historical restoration.
 
-A local child has a durable Session and at most one live activation. The manager reserves identity and capacity, prepares the child through its backend, and owns input admission, cold resume, and child-first disposal. The activation result settles after resource release and completion notification. Disposal reports cleanup failure separately without replacing a captured result. Structured capture closes input for that activation; a later cold resume does not inherit the output schema.
+A local child has a durable Session and at most one live activation. The manager reserves identity and capacity, prepares the child through its backend, and owns input admission, cold resume, and child-first disposal. The activation result settles after resource release and completion notification. Disposal reports cleanup failure separately without replacing a captured result. Structured capture closes input for that activation; a later cold resume does not inherit the output schema. An activation started with `oneShot: true` persists the existing one-shot mode and rejects further delivery or cold resume; its Session remains readable without reactivating temporary tools or guards. Omitting the option leaves local continuation unchanged.
 
 ```ts type-equiv
 /**
@@ -173,7 +178,7 @@ interface ContinuableCreateSpec {
 
 ## Messages and interruption
 
-sendMessage authorizes the exact live sender and permits only adjacent local agents. Running children receive steering input; absent continuable children resume from persistence. External executions reject follow-ups. Both local and external executions automatically report their final text, structured result, diagnostic, and status in the parent settlement notice. Local children can also send messages through send_message. caller delivery suppresses settlement notices. drainDescendants and drainChildren await owned work teardown for local and external activations.
+sendMessage authorizes the exact live sender and permits only adjacent local agents. Running children receive steering input; absent continuable children resume from persistence. External executions reject follow-ups. Both local and external executions automatically report their final text, structured result, diagnostic, and status in the parent settlement notice. Continuable local children can also send messages through send_message. caller delivery suppresses settlement notices. drainDescendants and drainChildren await owned work teardown for local and external activations.
 
 ```ts type-equiv
 /** Durable attribution for one model-authored message between Agents. */
@@ -390,6 +395,8 @@ type SubagentDescendantListEntry = SubagentListEntry & {
 }
 ```
 
+
+<a id="the-terminal-result-subagentresult"></a>
 
 
 <!-- BEGIN GENERATED cordis-surface (gen-cordis-catalog.ts) — do not edit between markers -->

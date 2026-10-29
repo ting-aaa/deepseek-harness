@@ -25,6 +25,10 @@ The Cordis framework and its foundation libraries are source-vendored into this 
 | `@deepseek-ai/cordis-plugin-hmr` | `@cordisjs/plugin-hmr` | [vendor/hmr](vendor/hmr/) | MIT |
 | `@deepseek-ai/cordis-plugin-logger-console` | `@cordisjs/plugin-logger-console` | [vendor/logger-console](vendor/logger-console/) | MIT |
 
+## Harness² native adaptation
+
+The optional [Harness² package](packages/experimental/harness2/README.md) includes modified TypeScript adaptations of [google-research/harness2](https://github.com/google-research/harness2), Copyright 2026 Google LLC, licensed under Apache-2.0. The package [NOTICE](packages/experimental/harness2/NOTICE) records the exact upstream source revision and modifications; its [LICENSE](packages/experimental/harness2/LICENSE) preserves the Apache-2.0 text and distinguishes original MIT-licensed DSH contributions. No upstream Python CLI or benchmark runner is bundled.
+
 ## Runtime npm dependencies
 
 External packages installed for runtime use or embedded in distributed Host or browser artifacts. Browser inputs are resolved through the shipping tsdown and Vite configurations, independently of npm dependency sections. Host embedding declarations identify the distributing package and its embedded dependencies. The tier covers every plugin a user can mount from `cordis.yml` — not only what the `dsh` CLI, Web UI, and Python SDK runtime load by default.

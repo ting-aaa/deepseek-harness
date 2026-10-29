@@ -64,6 +64,8 @@ Electron starts the private Desktop Host in Electron Node mode. The Host invokes
 | [`core/scope`](subsystems/scope.md) | The per-agent scoped-registration primitive | library, no key |
 | [`llm/llm`](subsystems/llm-streaming.md) | Message and stream vocabulary plus the adapter seam | `ctx.llm` |
 
+<a id="events"></a>
+
 ## Events
 
 Events are the extension points, and picking the right domain is the first decision in most changes.
@@ -75,6 +77,8 @@ Events are the extension points, and picking the right domain is the first decis
 AgentLoop initializes Agents with rollback and awaits serial `agent/created` before queued work. Unload retains resources through Agent teardown; [agent-loop](../packages/core/agent-loop/README.md#understand-the-implementation) defines ordering.
 
 The [event map](event-producer-consumer.md) lists every event's producers and consumers.
+
+<a id="turn-flow"></a>
 
 ## Turn flow
 
@@ -138,6 +142,8 @@ A **seam** is a swappable capability with three roles: a **Service Definition** 
 Seams are why one provider swap changes the whole product. Filesystem and subprocess providers share one execution world, so pointing them at a remote sandbox moves Bash, PTY, and LSP with them, with no provider forks. [Subagent providers](subsystems/subagent.md) vary just as widely behind one interface, from a fresh child agent to a delegated turn in another product.
 
 [Experimental Agent Teams](subsystems/agent-team.md) exposes opt-in `ctx.agentTeams` coordination with durable roster and task state plus direct inbox messaging over continuable subagents.
+
+Opt-in [Harness²](subsystems/harness2.md) compares child-session text guidance and persists accepted lessons.
 
 ## Where new behavior goes
 

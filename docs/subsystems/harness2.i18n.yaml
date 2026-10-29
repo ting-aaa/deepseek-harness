@@ -1,0 +1,34 @@
+# Bilingual-pair consistency record for harness2.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write docs/subsystems/harness2.md
+/:
+  en: 84b4b712f1509a51
+  zh: 8ca0d3da11738999
+/harness-refinement:
+  en: 976224787ca1fb44
+  zh: 27ca9ea2518c154c
+/harness-refinement/summary:
+  en: 0d0ff0893af2028e
+  zh: 27537658d66d3e18
+/harness-refinement/table-of-contents:
+  en: de1747d843c06720
+  zh: 18deec8bd1ba0341
+/harness-refinement/composition:
+  en: a1dbc883c58fa6c5
+  zh: 1a890deef9e54040
+/harness-refinement/run-and-lesson-ownership:
+  en: 70398c1e1929e418
+  zh: 8c28d012caf039f3
+/harness-refinement/requests-and-results:
+  en: 57aedf2964f79655
+  zh: f6c2efdf5c57c74f
+/harness-refinement/trust-and-model-history:
+  en: 8137972777af9116
+  zh: b45fca859e310ad4
+/harness-refinement/cordis-api/ctx-harness2-harness2engine:
+  en: f1118c8886f451ff
+  zh: f1118c8886f451ff
+/harness-refinement/dev-note:
+  en: 5de1d6304e00c58f
+  zh: e58fc8dda0bea8d5

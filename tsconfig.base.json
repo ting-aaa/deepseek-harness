@@ -28,6 +28,9 @@
     // not declaration path aliases, keep each package/vendor source compiled
     // under its own tsconfig boundary.
     "paths": {
+      "@deepseek-ai/dsh-experimental-harness2": ["./packages/experimental/harness2/src/index.ts"],
+      "@deepseek-ai/dsh-experimental-tool-harness2": ["./packages/experimental/tool-harness2/src/index.ts"],
+      "@deepseek-ai/dsh-experimental-harness2-bundle": ["./packages/experimental/harness2-bundle/src/index.ts"],
       "@deepseek-ai/dsh-client-ui-entry-customization": ["./packages/client/ui-entry-customization/src/index.ts"],
       "@deepseek-ai/dsh-client-ui-entry-customization/client": ["./packages/client/ui-entry-customization/src/client/index.ts"],
       "@deepseek-ai/dsh-client-ui-entry-customization/src/*": ["./packages/client/ui-entry-customization/src/*"],

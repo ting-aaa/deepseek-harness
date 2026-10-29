@@ -1639,6 +1639,25 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
     ],
   },
   {
+    key: 'harness2',
+    summary: 'Native recursive candidate service; the tool consumer owns schema and presentation.',
+    description: 'Native recursive candidate service; the tool consumer owns schema and presentation.',
+    methods: [
+      {
+        signature: 'run(request: Harness2Request): Promise<Harness2Result>',
+        description: 'Run a bounded recursive preview with durable per-stage checkpoints. Failed rollouts remain evidence when another baseline and final are usable. Cancellation or infrastructure failure drains children while retaining completed stage evidence. The final durable write is not cancellable; aborting after that write begins cannot roll it back. Earlier child logs remain.',
+        parameters: [{ name: 'request', description: 'exact live parent, task, domain-library key, and cancellation signal.' }],
+        returns: 'the completed answer, proposed instructions, reflection, and child evidence ids.',
+      },
+      {
+        signature: 'remember(parent: Agent, id: Harness2RunId, options: { signal: AbortSignal; callId?: ToolCallId }): Promise<number>',
+        description: 'Adopt one completed preview for future runs in its domain. This never changes the parent\'s prompt, tools, permissions, or workspace. The configured approval answerer must grant this exact request; unavailable, rejected, cancelled, and never-policy asks fail closed.',
+        parameters: [{ name: 'parent', description: 'exact live originating parent; another Session cannot adopt this preview.' }, { name: 'id', description: 'preview id returned by run; repeated adoption is idempotent.' }, { name: 'options', description: 'cancellation and optional originating tool call; the parent must have an open turn for approval audit.' }],
+        returns: 'the committed domain-library revision; rejects if a different preview was adopted since this run began.',
+      },
+    ],
+  },
+  {
     key: 'headlessStartup',
     summary: 'What the runner row reads from HEADLESS_STARTUP_SERVICE.',
     description: 'What the runner row reads from HEADLESS_STARTUP_SERVICE.',
@@ -5668,6 +5687,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export interface ButtonProps {\n    readonly label: string;\n    readonly hotkey?: string | undefined;\n    readonly disabled?: boolean | undefined;\n    readonly onPress?: (() => unknown) | undefined;\n}',
   },
   {
+    name: 'CandidateTree',
+    declaration: 'export type CandidateTree = Readonly<Record<string, string>>;',
+  },
+  {
     name: 'ChangeRequestCheck',
     declaration: 'export interface ChangeRequestCheck {\n    readonly name: string;\n    readonly state: CheckState;\n    readonly url: string | null;\n    readonly workflow: string | null;\n    readonly startedAt: string | null;\n    readonly completedAt: string | null;\n}',
   },
@@ -6494,6 +6517,18 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'GrantRecord',
     declaration: 'export interface GrantRecord {\n    readonly kind: \'grant\';\n    readonly payload: unknown;\n}',
+  },
+  {
+    name: 'Harness2Request',
+    declaration: 'export interface Harness2Request {\n    readonly parent: Agent;\n    readonly task: string;\n    readonly domain: string;\n    readonly signal: AbortSignal;\n    readonly mode?: \'parallel\' | \'sequential\';\n    readonly k?: number;\n    readonly resumeRunId?: Harness2RunId;\n}',
+  },
+  {
+    name: 'Harness2Result',
+    declaration: 'export interface Harness2Result {\n    readonly runId: Harness2RunId;\n    readonly domain: string;\n    readonly answer: string;\n    readonly instructions: string;\n    readonly reflection: string;\n    readonly candidate: CandidateTree;\n    readonly mode: \'parallel\' | \'sequential\';\n    readonly k: number;\n    readonly selected: string;\n    readonly finals: readonly {\n        label: string;\n        answer: string;\n        candidate: CandidateTree;\n        error?: string | undefined;\n        trajectory?: string | undefined;\n    }[];\n    readonly stages: readonly Harness2Stage[];\n}',
+  },
+  {
+    name: 'Harness2Stage',
+    declaration: 'export interface Harness2Stage {\n    readonly phase: \'baseline\' | \'invariant\' | \'domain\' | \'invariant-probe\' | \'domain-probe\' | \'compose\' | \'final\' | \'reflect\' | \'select\';\n    readonly sessionId: SessionId;\n    readonly label?: string | undefined;\n}',
   },
   {
     name: 'HookBudget',
@@ -8969,7 +9004,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'SubagentActivationSpec',
-    declaration: 'export interface SubagentActivationSpec {\n    readonly provider: string;\n    readonly label: string;\n    readonly childId?: SessionId;\n    readonly request: Omit<SubagentStartRequest, \'label\' | \'signal\'>;\n    readonly signal: AbortSignal;\n    readonly delivery: \'parent\' | \'caller\';\n}',
+    declaration: 'export interface SubagentActivationSpec {\n    readonly provider: string;\n    readonly label: string;\n    readonly childId?: SessionId;\n    readonly oneShot?: boolean;\n    readonly request: Omit<SubagentStartRequest, \'label\' | \'signal\'>;\n    readonly signal: AbortSignal;\n    readonly delivery: \'parent\' | \'caller\';\n}',
   },
   {
     name: 'SubagentCapabilities',

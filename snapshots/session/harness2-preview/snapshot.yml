@@ -1,0 +1,10 @@
+version: 1
+scenario: harness2-preview
+profile: headless
+composition: harness2-preview
+recording: authored
+header:
+  class: harness2-preview
+  pin: true
+  childSystemPrompts: [1, 2, 3, 4, 5, 6, 7, 8]
+  childToolSchemas: [1, 2, 3, 4, 5, 6, 7, 8]

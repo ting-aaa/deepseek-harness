@@ -1,5 +1,6 @@
 /** Recorded-session replay through the shipped headless `dsh` profile. */
 
+import { verifyHarness2Preview } from './harness2-preview/assertions.ts'
 import { startHttpMcpFixture } from '../../packages/mcp/mcp-client/tests/http-fixture.ts'
 import { cp, copyFile, mkdir, mkdtemp, readFile, readdir, realpath, rm, symlink, utimes, writeFile } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
@@ -940,6 +941,7 @@ async function verifyHeaders(scenario: HeadlessScenario, actualLogs: readonly Se
     schemaSets[index] as unknown[],
   ))
 
+  const childFixtures = await fixtureSessions(scenario)
   const childPrompts = new Map<number, string>()
   const childSchemas = new Map<number, unknown[][]>()
   for (const index of scenario.manifest.header.childSystemPrompts ?? []) {
@@ -960,7 +962,14 @@ async function verifyHeaders(scenario: HeadlessScenario, actualLogs: readonly Se
     }
     for (const [index, header] of headers.entries()) {
       const selectedSchemas = childSchemas.get(logIndex)?.[index]
-      const base = reconstructed[index] ?? reconstructed[0]
+      const parentHeader = reconstructed[index] ?? reconstructed[0]
+      // A child can inherit a different model selection or tighter output budget.
+      // Pin its recorded configuration rather than borrowing the parent request.
+      const childFixture = logIndex === 0 ? undefined : childFixtures[logIndex]
+      const childHeader = childFixture === undefined ? undefined
+        : normalizedHeaders(childFixture, fixtureContext(childFixture))[index]
+      const base = childHeader === undefined ? parentHeader
+        : { ...parentHeader as JsonObject, config: (childHeader as JsonObject).config }
       const expected = selectedSchemas === undefined ? base : { ...base as JsonObject, tools: selectedSchemas }
       expect(header, `${scenario.name}: request header ${index + 1}`).toEqual(expected)
     }
@@ -1400,6 +1409,7 @@ describe('headless recorded-session snapshots', () => {
               expect(results.every(result => result.isError === false)).toBe(true)
               expect(log).toContain('# Office task routing')
             }
+            if (scenario.name === 'harness2-preview') await verifyHarness2Preview(actualLogs, cwd)
             if (scenario.name === 'advanced-toolchain') verifyAdvancedToolchain(actualLogs)
             if (scenario.name === 'session-query-spill') {
               await verifySessionQuerySpill(actualLogs[0]!.content, spillRoot, locatorRoot)

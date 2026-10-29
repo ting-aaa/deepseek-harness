@@ -1,0 +1,79 @@
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write packages/experimental/harness2/README.md
+/:
+  en: f1e55ec73c96d00d
+  zh: ae16c2ddef29aa5e
+/deepseek-ai-dsh-experimental-harness2:
+  en: 906cc8f89f02a7fd
+  zh: e59a5a245c8cabec
+/deepseek-ai-dsh-experimental-harness2/summary:
+  en: 298995c39a0d5ee0
+  zh: ab8d4c05e52bb72a
+/deepseek-ai-dsh-experimental-harness2/table-of-contents:
+  en: d152484eb41ac6b4
+  zh: 5b6bd00fce5371c3
+/deepseek-ai-dsh-experimental-harness2/use-this-package:
+  en: 6dabbe7d5c8c8c74
+  zh: 524f165d7444d26a
+/deepseek-ai-dsh-experimental-harness2/use-this-package/minimal-configuration:
+  en: 6c0b9bf4fb07e1d9
+  zh: 90a2e2ccbf14338e
+/deepseek-ai-dsh-experimental-harness2/use-this-package/candidate-capabilities:
+  en: 39f05894c85c3dfe
+  zh: 7eba78fa8388e6ec
+/deepseek-ai-dsh-experimental-harness2/use-this-package/persistence-and-failures:
+  en: 2ff61ab442d7ed6b
+  zh: c3633852f9b0888d
+/deepseek-ai-dsh-experimental-harness2/understand-the-implementation:
+  en: 565311ca65e1a7fe
+  zh: 7f8b89ef2ac3bc08
+/deepseek-ai-dsh-experimental-harness2/further-exploration:
+  en: 410dd3e0607e0c73
+  zh: f6c610682c2ac9a7
+/deepseek-ai-dsh-experimental-harness2/model-experience:
+  en: 215e7ba838619b7b
+  zh: a311da3843709f90
+/deepseek-ai-dsh-experimental-harness2/model-experience/child-policy-and-assignments:
+  en: 7daea56109a4b2a6
+  zh: b701c495288a1880
+/deepseek-ai-dsh-experimental-harness2/model-experience/child-policy-and-assignments/what-the-model-sees:
+  en: d929307aa88c0c64
+  zh: ac291426c3baf3bf
+/deepseek-ai-dsh-experimental-harness2/model-experience/child-policy-and-assignments/what-the-model-sees/shared-child-policy:
+  en: 623e901a28a5d925
+  zh: d9fb908e4a85da09
+/deepseek-ai-dsh-experimental-harness2/model-experience/child-policy-and-assignments/what-the-model-sees/answer-assignment:
+  en: 9c5b6af5d543ed92
+  zh: 1f8fced9bbed207a
+/deepseek-ai-dsh-experimental-harness2/model-experience/child-policy-and-assignments/what-the-model-sees/task-independent-proposal-assignment:
+  en: 9d557780f0f46577
+  zh: bc8dcb3c9605481f
+/deepseek-ai-dsh-experimental-harness2/model-experience/child-policy-and-assignments/what-the-model-sees/domain-proposal-assignment:
+  en: 9c21863a4bce89a6
+  zh: 8a16d721b3d012e2
+/deepseek-ai-dsh-experimental-harness2/model-experience/child-policy-and-assignments/what-the-model-sees/composition-assignment:
+  en: e396cf02b111b743
+  zh: 46e893a2426fab29
+/deepseek-ai-dsh-experimental-harness2/model-experience/child-policy-and-assignments/what-the-model-sees/reflection-assignment:
+  en: 2b1c93ae1c38b44a
+  zh: b57188bbdc3eec39
+/deepseek-ai-dsh-experimental-harness2/model-experience/child-policy-and-assignments/what-the-model-sees/candidate-tree-proposal-constraints:
+  en: 9af751d6a56154d7
+  zh: 17df388bdcf55416
+/deepseek-ai-dsh-experimental-harness2/model-experience/child-policy-and-assignments/what-the-model-sees/final-selection-assignment:
+  en: 55b25165146e46d6
+  zh: ecb39659a2d238f3
+/deepseek-ai-dsh-experimental-harness2/model-experience/child-policy-and-assignments/token-effect:
+  en: 428982a480c25906
+  zh: c761dc414e82e5f8
+/deepseek-ai-dsh-experimental-harness2/model-experience/child-policy-and-assignments/kv-cache-effect:
+  en: 410dc48e69d80805
+  zh: 9e60ec8024a7907f
+/deepseek-ai-dsh-experimental-harness2/known-limitations-and-deferred-work:
+  en: a1493e6284f9e944
+  zh: 9e8874136f9d6e84
+/deepseek-ai-dsh-experimental-harness2/known-limitations-and-deferred-work/dev-note:
+  en: 278575869a916969
+  zh: 5b203b382cceda3c

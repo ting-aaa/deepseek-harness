@@ -1,0 +1,19 @@
+Harness2 native DSH adaptation
+
+This package contains portions translated or adapted from:
+  Harness2: Recursive Agent Harnessing for an Open World
+  https://github.com/google-research/harness2
+  Source revision: 1cfe254e8d25b15f37048c3730134686abe60335
+  Copyright 2026 Google LLC
+  Licensed under the Apache License, Version 2.0.
+
+Modifications: translated selected Python algorithm and candidate-tree behavior
+to TypeScript, integrated with native DSH managed children, Cordis configuration,
+policy enforcement, structured output, storage and explicit lesson approval.
+The upstream Python CLI, benchmark runners and dependencies are not bundled.
+Original DSH contributions retain the repository MIT license.
+See LICENSE for both license texts and their scope.
+
+Source mapping:
+  harness2/core/recursion.py -> src/schedule.ts
+  harness2/core/tree.py -> src/candidate.ts
