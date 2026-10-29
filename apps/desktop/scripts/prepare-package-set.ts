@@ -27,6 +27,9 @@ import { capture } from '../../../scripts/release/process.ts'
 import { tarballFiles } from '../../../scripts/release/tarball.ts'
 import { desktopTargetPlatform, resolveDesktopBuildTarget, resolveDesktopTargetBuildPaths } from './desktop-build-paths.mjs'
 
+import { HARNESS2_DESKTOP_BUNDLE } from '../src/fork-profile.ts'
+import { resolveDesktopForkFlavor } from './desktop-fork-flavor.mjs'
+
 const DSH_PACKAGE = '@deepseek-ai/dsh'
 const ROOT_PACKAGES = [DSH_PACKAGE, DESKTOP_HOST_PACKAGE] as const
 const APP_ROOT = resolve(import.meta.dirname, '..')
@@ -66,11 +69,13 @@ function dependencyNames(manifest: Readonly<Record<string, unknown>>, section: s
  * Reads the repository workspace manifest and package manifests to distinguish required local packages from npm-resolved externals.
  * @param available - Packed packages indexed by package name.
  * @param target - Platform and architecture of the installer payload.
+ * @param harness2 - Include the custom Harness² bundle and its required local closure.
  * @returns Selected packages sorted by name.
  */
 export function selectDesktopPackageClosure(
   available: ReadonlyMap<string, PackedDesktopPackage>,
   target: ReturnType<typeof desktopTargetPlatform>,
+  harness2 = false,
 ): PackedDesktopPackage[] {
   const workspace = yaml.load(readFileSync(join(REPOSITORY_ROOT, 'pnpm-workspace.yaml'), 'utf8')) as { packages: string[] }
   const workspaceNames = new Set(globSync(workspace.packages.map(pattern => `${pattern}/package.json`), { cwd: REPOSITORY_ROOT })
@@ -95,7 +100,7 @@ export function selectDesktopPackageClosure(
         && supportsTarget(optional.manifest, 'cpu', target.arch)) visit(dependency)
     }
   }
-  for (const name of ROOT_PACKAGES) {
+  for (const name of [...ROOT_PACKAGES, ...(harness2 ? [HARNESS2_DESKTOP_BUNDLE] : [])]) {
     if (!available.has(name)) throw new Error(`desktop package set: packed inputs omit ${name}`)
     visit(name)
   }
@@ -147,11 +152,12 @@ export function assertDesktopHostPackageFiles(files: readonly string[]): void {
  * @param inputs - Release tarball directories.
  * @param output - Destination package-set directory.
  * @param target - Platform and architecture of the installer payload.
+ * @param harness2 - Include the custom Harness² bundle and its required local closure.
  */
 export function prepareDesktopPackageSet(
-  inputs: readonly string[], output: string, target: ReturnType<typeof desktopTargetPlatform>,
+  inputs: readonly string[], output: string, target: ReturnType<typeof desktopTargetPlatform>, harness2 = false,
 ): void {
-  const selected = selectDesktopPackageClosure(packedPackages(inputs), target)
+  const selected = selectDesktopPackageClosure(packedPackages(inputs), target, harness2)
   const host = selected.find(packed => packed.manifest.name === DESKTOP_HOST_PACKAGE)
   if (host === undefined) throw new Error(`desktop package set: selected closure omits ${DESKTOP_HOST_PACKAGE}`)
   assertDesktopHostPackageFiles(tarballFiles(host.tarball))
@@ -193,7 +199,7 @@ function main(): void {
   })
   const inputs = (values.from ?? defaultInputs).map(path => resolve(REPOSITORY_ROOT, path))
   const output = values.out === undefined ? buildPaths.packageSet : resolve(REPOSITORY_ROOT, values.out)
-  prepareDesktopPackageSet(inputs, output, desktopTargetPlatform(resolveDesktopBuildTarget()))
+  prepareDesktopPackageSet(inputs, output, desktopTargetPlatform(resolveDesktopBuildTarget()), resolveDesktopForkFlavor(process.env) === 'harness2')
   console.log(`desktop package set: prepared ${output}`)
 }
 

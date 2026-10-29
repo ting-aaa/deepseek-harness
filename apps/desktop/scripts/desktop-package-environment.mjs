@@ -4,6 +4,7 @@ import { accessSync, constants, readFileSync, statSync } from 'node:fs'
 import { dirname, isAbsolute, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { parseEnv } from 'node:util'
+import { forkPackageEnvironment, resolveDesktopForkFlavor } from './desktop-fork-flavor.mjs'
 import { resolveDesktopAppId, resolveMacOSNotarizationEnvironment, resolveMacOSSigningEnvironment, resolveNpmRegistry } from './desktop-release-environment.mjs'
 import { resolveDesktopAutoUpdateConfig } from './desktop-auto-update-environment.mjs'
 import { createWindowsTokenSigner } from './windows-sign.mjs'
@@ -47,6 +48,11 @@ export function localMacOSPackageEnvironment(environment = process.env) {
  * @returns {NodeJS.ProcessEnv} Isolated environment with file-owned release settings.
  */
 export function loadDesktopPackageEnvironment(platform, environment = process.env, appRoot = APP_ROOT, options = {}) {
+  if (resolveDesktopForkFlavor(environment) !== undefined) {
+    if (!options.unsigned) throw new Error('desktop package: custom fork requires --unsigned')
+    if (platform !== 'win32') throw new Error('desktop package: custom fork currently requires Windows x64')
+    return forkPackageEnvironment(environment)
+  }
   const compression = environment.PACKAGE_WINDOWS_COMPRESSION_LEVEL
   if (compression !== undefined && compression !== '') {
     if (platform !== 'win32' || !['3', '7'].includes(compression)) {
@@ -153,10 +159,15 @@ function requireReadableFile(environment, name) {
  * @returns {void}
  */
 export function validateDesktopPackageEnvironment(environment, target, options = {}) {
+  const fork = resolveDesktopForkFlavor(environment)
+  if (fork !== undefined && (target.platform !== 'win32' || target.arch !== 'x64')) throw new Error('desktop package: custom fork currently requires Windows x64')
+  if (fork !== undefined && (!options.unsigned || environment.DSH_DESKTOP_APP_ID !== 'local.harness2.desktop')) {
+    throw new Error('desktop package: custom fork requires --unsigned and its isolated application ID')
+  }
   resolveDesktopTargetBuildPaths(environment, target.platform, target.arch)
   resolveDesktopAppId(environment)
   resolveNpmRegistry(environment)
-  if (target.platform !== 'darwin' || !options.unsigned) resolveDesktopPolicyEnvironment(environment)
+  if (fork === undefined && (target.platform !== 'darwin' || !options.unsigned)) resolveDesktopPolicyEnvironment(environment)
   if (target.platform === 'darwin') resolveMacOSPackageSettings(environment)
   else resolveWindowsPackageSettings(environment)
   if (options.unsigned) return

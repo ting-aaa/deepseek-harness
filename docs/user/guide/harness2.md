@@ -27,6 +27,8 @@ Harness² compares alternative text guidance for a self-contained task before of
 
 Start with a working DSH model configuration and explicitly enable the [Harness² bundle](../../../packages/experimental/harness2-bundle/README.md#use-this-package). It is not part of the default profile composition. The bundle reference owns activation; the [service reference](../../../packages/experimental/harness2/README.md#use-this-package) owns deployment limits.
 
+For the separately packaged Windows application, see [Harness² custom Desktop](../../../apps/desktop/README.md#harness2-custom-package). It uses isolated application data and includes the bundle, but still needs online model configuration; Windows does not enable the Linux-only generated-code runtime.
+
 Include the problem, constraints, and source material in the task text. Children receive no parent conversation or file access, so “use the document above” or a filesystem path is insufficient. Choose a domain label for a reusable task family. Matching mode and domain labels share lessons across conversations using this storage instance; they are not a privacy or authorization boundary. Do not include secrets in task text.
 
 -----

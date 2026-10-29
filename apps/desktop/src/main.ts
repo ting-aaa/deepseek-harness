@@ -4,6 +4,8 @@ import { WINDOWS_TITLEBAR_HEIGHT } from './windows-layout.ts'
 
 import { access, readFile, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
+import { homedir } from 'node:os'
+import { desktopProfileBundles } from './fork-profile.ts'
 import { fileURLToPath } from 'node:url'
 import {
   app,
@@ -67,6 +69,15 @@ import { DesktopQuitConfirmation } from './quit-confirmation.ts'
 import { DesktopTray } from './tray.ts'
 import { DesktopBackgroundNotice } from './background-notice.ts'
 
+// The bundler seals this flavor; installed applications cannot change it with environment overrides.
+const harness2Desktop = process.env.DSH_DESKTOP_FORK_FLAVOR === 'harness2'
+if (harness2Desktop) {
+  process.env.DSH_TELEMETRY_DISABLED = '1'
+  process.env.DSH_HOME = process.env.DSH_HARNESS2_HOME ?? join(homedir(), '.harness2-desktop')
+  app.setPath('userData', join(app.getPath('appData'), 'Harness2 Desktop Custom'))
+}
+const profileBundles = desktopProfileBundles(harness2Desktop)
+
 let focusPrimaryWindow = (): void => {}
 let stopForRecovery = async (): Promise<void> => { await stopOperationReports() }
 let shuttingDown = false
@@ -102,7 +113,7 @@ const recovery = new DesktopFatalRecovery({
   show: options => dialog.showMessageBox(options),
   stop: () => { shuttingDown = true; return stopForRecovery() },
   disablePlugins: async () => {
-    const manager = new DesktopProjectManager(resolveDesktopPaths(), runtimeResources())
+    const manager = new DesktopProjectManager(resolveDesktopPaths(), runtimeResources(), profileBundles)
     const backupPath = await manager.disableAllPlugins()
     console.info('Desktop profile recovery completed:', { profilePatchBackup: backupPath ?? null, homePatch: 'unchanged' })
   },
@@ -376,7 +387,7 @@ async function main(): Promise<void> {
     ? developmentPrimaryRuntime()
     : join(process.resourcesPath, 'runtime', 'primary-runtime')
   const activeProject = paths.profile
-  const manager = new DesktopProjectManager(paths, resources)
+  const manager = new DesktopProjectManager(paths, resources, profileBundles)
   // Dock and Finder launches inherit only launchd's environment; every Host shares one login-shell read.
   const loginShellRead = new AbortController()
   // The probe runs in its own process group, which outlives Desktop unless the read is aborted.
@@ -731,7 +742,7 @@ async function main(): Promise<void> {
       }
       return true
     },
-    undefined, undefined, undefined,
+    undefined, harness2Desktop ? () => false : undefined, undefined,
     (success, reason) => { void track('desktop_upgrade_download_result', { is_success: success, ...reason === undefined ? {} : { error_reason: reason } }) },
     updateChannel,
   )
@@ -1056,7 +1067,7 @@ async function main(): Promise<void> {
       : { label: currentDesktopLocale().messages.aboutMenu, role: 'about' },
     { type: 'separator' },
     { label: currentDesktopLocale().messages.checkUpdatesMenu, click: () => { void openUpdatePrompt(true) } },
-    ...process.platform === 'darwin' || process.platform === 'win32'
+    ...!harness2Desktop && (process.platform === 'darwin' || process.platform === 'win32')
       ? [{ label: currentDesktopLocale().messages.cliCommandMenu, click: () => { void commandManager.show() } }] : [],
     ...development ? [
       { type: 'separator' as const },
@@ -1327,7 +1338,7 @@ async function main(): Promise<void> {
     window.focus()
   }
 
-  if (app.isPackaged || process.env.DSH_DESKTOP_DEV_APP === '1') app.setAsDefaultProtocolClient('dsh')
+  if (!harness2Desktop && (app.isPackaged || process.env.DSH_DESKTOP_DEV_APP === '1')) app.setAsDefaultProtocolClient('dsh')
   app.on('open-url', (event, url) => {
     event.preventDefault()
     if (url === 'dsh://open' || url === 'dsh://open/') focusPrimaryWindow()
@@ -1393,7 +1404,7 @@ async function main(): Promise<void> {
   const policyInput: unknown = app.isPackaged
     ? ('dshMandatoryUpdatePolicy' in manifest ? manifest.dshMandatoryUpdatePolicy : undefined)
     : developmentPolicy === undefined ? undefined : JSON.parse(developmentPolicy) as unknown
-  const policyConfig = resolveDesktopPolicyConfig(policyInput, !app.isPackaged)
+  const policyConfig = harness2Desktop ? undefined : resolveDesktopPolicyConfig(policyInput, !app.isPackaged)
   if (policyConfig !== undefined) {
     if (policyConfig.authentication === 'feishu-test') {
       policyAuth = new DesktopPolicyTestAuth(policyConfig.origin, policyConfig.allowedAuthOrigins, locale,

@@ -9,6 +9,8 @@ import { promisify } from 'node:util'
 import { fileURLToPath } from 'node:url'
 import { readPrimaryRuntime, workspaceDependencyPaths } from '../../../packages/skill/tool-workspace-dependencies/src/index.ts'
 import { DesktopHostProcess } from '../src/host-process.ts'
+import { desktopProfileBundles } from '../src/fork-profile.ts'
+import { resolveDesktopForkFlavor } from './desktop-fork-flavor.mjs'
 import { createPluginProfile } from '../src/project-manager.ts'
 import type { DesktopRuntimeDescriptor } from '../src/runtime-tree.ts'
 
@@ -40,7 +42,7 @@ export async function smokeDesktopRuntime(
   let timer: ReturnType<typeof setTimeout> | undefined
   try {
     writeFileSync(join(home, 'npmrc'), '')
-    createPluginProfile(profile)
+    createPluginProfile(profile, desktopProfileBundles(resolveDesktopForkFlavor(environment) === 'harness2'))
     const pluginName = 'desktop-runtime-smoke-plugin'
     const plugin = join(home, pluginName)
     mkdirSync(plugin, { recursive: true })
@@ -90,8 +92,12 @@ import { execFile } from 'node:child_process'
 import { readFile } from 'node:fs/promises'
 export function apply(ctx) {
   if (!(ctx instanceof Context)) throw new Error('desktop runtime: external plugin loaded another Cordis instance')
+  ${resolveDesktopForkFlavor(environment) === 'harness2' ? "if (!ctx.harness2) throw new Error('desktop runtime: Harness2 service did not activate'); if (ctx.get('productTelemetry') || ctx.get('productAnalytics')) throw new Error('desktop runtime: custom telemetry is active')" : ''}
   ctx.effect(() => ctx.webServer.register({ kind: 'exact', path: '/desktop-smoke',
-    handler(_request, response) { response.end('plugin route ready') } }))
+    handler(_request, response) {
+      ${resolveDesktopForkFlavor(environment) === 'harness2' ? "if (!ctx.tools.get('harness2') || !ctx.tools.get('harness2_remember')) { response.statusCode = 500; response.end('Harness2 tools missing'); return }" : ''}
+      response.end('plugin route ready')
+    } }))
   ctx.effect(() => ctx.webServer.register({ kind: 'exact', path: '/desktop-smoke-install',
     async handler(_request, response) {
       try {
@@ -135,7 +141,7 @@ export function apply(ctx) {
   }
 }
 `)
-    writeFileSync(join(plugin, 'bundle.yml'), '- insert:\n    - id: desktop-runtime-smoke-plugin\n      name: desktop-runtime-smoke-plugin\n      inject: [webServer, officeToPdf, skills, pluginManager]\n')
+    writeFileSync(join(plugin, 'bundle.yml'), `- insert:\n    - id: desktop-runtime-smoke-plugin\n      name: desktop-runtime-smoke-plugin\n      inject: [webServer, officeToPdf, skills, pluginManager${resolveDesktopForkFlavor(environment) === 'harness2' ? ', harness2, tools' : ''}]\n`)
     cpSync(plugin, join(profile, 'node_modules', pluginName), { recursive: true })
     const manifest = JSON.parse(readFileSync(join(profile, 'package.json'), 'utf8')) as {
       dependencies?: Record<string, string>

@@ -27,6 +27,8 @@ Harness² 先针对自包含任务比较不同的文本指导，再提供组合�
 
 先准备可用的 DSH 模型配置，并显式启用 [Harness² 组合包](../../../packages/experimental/harness2-bundle/README.zh.md#use-this-package)。默认配置组合不包含它。组合包参考负责启用方式；[服务参考](../../../packages/experimental/harness2/README.zh.md#use-this-package)负责部署限制。
 
+单独打包的 Windows 应用见 [Harness² 自定义桌面版](../../../apps/desktop/README.zh.md#harness2-custom-package)。它使用独立应用数据并包含组合包，但仍需配置在线模型；Windows 不会启用仅支持 Linux 的生成代码运行时。
+
 在任务文本中提供问题、约束与源材料。子会话没有父对话或文件访问权限，因此仅写“使用上面的文档”或文件路径并不足够。为可复用的任务类别选择领域标签。使用同一存储实例的对话会按相同模式与领域标签共享经验；标签不是隐私或授权边界。不要在任务文本中包含机密信息。
 
 -----

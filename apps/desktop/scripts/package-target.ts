@@ -1,6 +1,7 @@
 /** Build one release target with matching Electron and dsh architecture. */
 
 import { spawn } from 'node:child_process'
+import { resolveDesktopForkFlavor } from './desktop-fork-flavor.mjs'
 import { mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs'
 import { parseArgs } from 'node:util'
 import { join, resolve } from 'node:path'
@@ -328,6 +329,7 @@ async function resolveRequestedBuildVersion(
   const requested = invocation.requestedBuildVersion
   if (requested === undefined) return productVersion
   if (requested !== AUTOMATIC_BUILD_VERSION) return validateDesktopBuildVersion(requested, productVersion)
+  if (resolveDesktopForkFlavor(environment) !== undefined) throw new Error('desktop package: custom fork requires a fixed build version, not auto')
   const paths = desktopTargetBuildPaths(invocation.target.name, environment)
   return suggestDesktopBuildVersion({
     productVersion, target: invocation.target.name,
@@ -344,7 +346,8 @@ async function main(): Promise<void> {
   if (invocation.skipNotarization) {
     process.stdout.write('desktop package: skipping notarization and stapling; internal debugging only, not qualified for distribution or update publishing\n')
   }
-  const environment = target.platform === 'darwin' && invocation.unsigned
+  const fork = resolveDesktopForkFlavor(process.env)
+  const environment = fork === undefined && target.platform === 'darwin' && invocation.unsigned
     ? localMacOSPackageEnvironment()
     : loadDesktopPackageEnvironment(target.platform, process.env, APP_ROOT, {
       unsigned: invocation.unsigned, prepareOnly: invocation.prepareOnly,

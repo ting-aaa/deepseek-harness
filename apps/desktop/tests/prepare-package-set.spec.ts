@@ -84,10 +84,11 @@ describe('desktop package-set selection', () => {
     ])
   })
 
-  it('requires both Desktop Host and public CLI entries', () => {
+  it('requires Desktop Host, public CLI, and custom policy entries', () => {
     const files = [
       'package/lib/index.js',
       'package/lib/cli.js',
+      'package/config/harness2.patch.yml',
     ]
     expect(() => {
       assertDesktopHostPackageFiles(files)
@@ -96,6 +97,7 @@ describe('desktop package-set selection', () => {
       assertDesktopHostPackageFiles(files.slice(1))
     }).toThrow(/lib\/index\.js/u)
     expect(() => { assertDesktopHostPackageFiles(files.slice(0, 1)) }).toThrow(/lib\/cli\.js/u)
+    expect(() => { assertDesktopHostPackageFiles(files.slice(0, 2)) }).toThrow(/config\/harness2\.patch\.yml/u)
   })
 })
 

@@ -1,0 +1,5 @@
+# Custom distribution policy is applied after the user's profile patches.
+- id: desktop-product-telemetry
+  disabled: true
+- id: product-analytics
+  disabled: true

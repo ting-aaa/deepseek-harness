@@ -21,6 +21,7 @@ Desktop runs the Harness workspace in a native application. This reference cover
 - [Recovery and diagnostics](docs/diagnostics/README.md)
 - [Develop](#develop)
 - [Package](#package)
+  - [Harness² custom Windows package](#harness2-custom-package)
 - [Windows installer interface](#windows-installer-interface)
 - [Updates](#updates)
 - [Low-level development overrides](#low-level-development-overrides)
@@ -243,6 +244,32 @@ Use the dedicated guides for build and release operations. Shared Windows runner
 - [Desktop packaging](packaging/README.md): local and Actions builds, versions, deployment settings, artifacts, logs and verification.
 - [Windows signing and runner operations](windows-signing/README.md): machine setup, accepted isolation risks, signing credentials, token failures and cache maintenance.
 - [Desktop publication](publishing/README.md): upload credentials, release identity, fixed downloads, update feeds and upload recovery.
+
+<a id="harness2-custom-package"></a>
+
+### Harness² custom Windows package
+
+`Harness2 Desktop Custom` is an unsigned Windows x64 distribution selected explicitly with `DSH_DESKTOP_FORK_FLAVOR=harness2`. It is not an official DeepSeek installer or an update to the official application. Its packaged local dependency closure includes the Harness² engine, tools, bundle, and modified subagent implementation; first-run profile creation and profile recovery include the bundle. Existing custom profiles are not overwritten. Model use still requires network access and configured credentials; packaging the application does not provide offline AI.
+
+| Setting | Custom distribution |
+|---|---|
+| Application ID | `local.harness2.desktop` |
+| Harness data | `DSH_HARNESS2_HOME`, otherwise `~/.harness2-desktop`; an inherited official `DSH_HOME` is ignored. |
+| Electron data | `%APPDATA%/Harness2 Desktop Custom`, separate from the official application. |
+| Official integration | No official updater/update policy, `dsh://` registration, or **Manage dsh command** menu; product telemetry is disabled. |
+| Generated-code execution | `runtime: null` by default; the optional isolated runtime requires Linux and is not supported natively by this Windows package. |
+
+Build on a prepared Windows x64 host using the prerequisites in the [packaging guide](packaging/README.md). Select the custom flavor in PowerShell before checking or packaging:
+
+```powershell
+$env:DSH_DESKTOP_FORK_FLAVOR = 'harness2'
+pnpm run package:desktop:win:x64:unsigned --check
+pnpm run package:desktop:win:x64:unsigned
+```
+
+This flavor accepts unsigned Windows x64 only and does not read release configuration files or consume signing, publishing, or updater settings. Use the checkout product version or an explicit fixed `--build-version`; `--build-version auto` is rejected. A successful native build writes `apps/desktop/.desktop-build/targets/win-x64/unsigned-artifacts/harness2-desktop-<version>-win-x64-unsigned.exe`. These are manual build instructions; publishing source or passing source tests does not establish that an installer has been built or installed successfully. No signing or official release is implied.
+
+After installation and model setup, follow the [Harness² preview guide](../../docs/user/guide/harness2.md). Keep the custom data directories separate; do not point `DSH_HARNESS2_HOME` at the official installation’s data.
 
 <a id="windows-uninstall-rules"></a>
 

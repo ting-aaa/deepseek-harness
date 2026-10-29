@@ -1,5 +1,7 @@
 /** Materialize the complete production runtime before publishing Desktop resources. */
 
+import { desktopProfileBundles } from '../src/fork-profile.ts'
+import { resolveDesktopForkFlavor } from './desktop-fork-flavor.mjs'
 import { resolveMacOSSignatureCacheDirectory } from './macos-signature-cache-directory.mjs'
 import { packagingStep } from './packaging-step.mjs'
 import { spawn } from 'node:child_process'
@@ -126,7 +128,7 @@ async function main(): Promise<void> {
     const patches = await packagingStep(process.env.DSH_DESKTOP_PACKAGING_RUN_DIR, 'runtime:stage-packages', async () => {
       copyFileSync(join(PACKAGE_SET_ROOT, DESKTOP_PACKAGE_SET_FILE), join(BUILD_ROOT, DESKTOP_PACKAGE_SET_FILE))
       cpSync(join(PACKAGE_SET_ROOT, DESKTOP_PACKAGES_DIR), join(BUILD_ROOT, DESKTOP_PACKAGES_DIR), { recursive: true })
-      createRuntimeProjectMetadata(BUILD_ROOT, release)
+      createRuntimeProjectMetadata(BUILD_ROOT, release, desktopProfileBundles(resolveDesktopForkFlavor(process.env) === 'harness2'))
       return prepareRuntimePatches(BUILD_ROOT, resolve(APP_ROOT, '..', '..'))
     })
     await packagingStep(process.env.DSH_DESKTOP_PACKAGING_RUN_DIR, 'runtime:lockfile', () => runPnpm(['install', '--lockfile-only']))
