@@ -260,6 +260,34 @@ function observeCancel(agent: Agent, callback: () => void): void {
 }
 
 describe('one-shot local activations', () => {
+  it('delivers the final answer after a one-shot child reports progress to its parent', async () => {
+    const progress = 'Still checking the evidence.'
+    const final = 'The completed investigation found the answer.'
+    const { ctx, parent } = await setup([
+      toolCallResponse('progress-call', 'send_message', { agent_id: 'parent', message: progress }),
+      textResponse(final),
+    ])
+    parkParent(ctx, parent)
+    await ctx.plugin(SubagentControl)
+    const inserted: Array<{ kind: string; text: string }> = []
+    ctx.on('agent/inbox/inserted', ({ agent, message: item }) => {
+      if (agent === parent) inserted.push({ kind: item.source.kind,
+        text: item.content.flatMap(block => block.type === 'text' ? [block.text] : []).join('\n') })
+    })
+    try {
+      const started = await ctx.subagents.startActivation({ ...startSpec(parent), delivery: 'parent', oneShot: true })
+      await expect(started.result).resolves.toMatchObject({ stopReason: 'completed', output: message(final) })
+      expect(inserted).toContainEqual({ kind: 'agent-message', text: expect.stringContaining(progress) })
+      expect(inserted).toContainEqual({ kind: 'subagent-settled', text: expect.stringContaining(final) })
+      expect(inserted.find(item => item.kind === 'subagent-settled')!.text).not.toContain('its closing message is omitted')
+      expect(ctx.agents.get(started.childId)).toBeUndefined()
+      await expect(ctx.subagents.sendMessage(parent, started.childId, message('continue'), { signal: testSignal }))
+        .rejects.toMatchObject({ code: 'NOT_RESUMABLE' })
+    } finally {
+      await ctx.fiber.dispose()
+    }
+  })
+
   it.each(['caller', 'parent'] as const)('keeps %s-delivered children one-shot while resident and after settlement', async (delivery) => {
     const release = Promise.withResolvers<undefined>()
     const adapter = new GatedAdapter([{ chunks: textResponse('one-shot answer'), gate: release.promise }])

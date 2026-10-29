@@ -1217,7 +1217,7 @@ export class SubagentManager {
       const message = createSettlementMessage(
         activation.childId, terminal,
         activation.kind === 'local' && activation.mode === 'continuable',
-        activation.kind === 'local' && activation.omitClosingText,
+        activation.kind === 'local' && activation.mode === 'continuable' && activation.omitClosingText,
       )
       if (this.closingTeardownFor(parent) !== undefined) {
         parent.inject(message)
