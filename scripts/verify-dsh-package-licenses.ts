@@ -10,8 +10,8 @@ import { resolve, sep } from 'node:path'
 const ROOT = resolve(import.meta.dirname, '..')
 const DSH_PACKAGE_NAME = /^@deepseek-ai\/dsh(?:-|$)/
 // Translated Google source retains Apache-2.0 obligations; this is not an alternative license.
-const HARNESS2_PACKAGE = 'packages/experimental/harness2/package.json'
-const HARNESS2_NAME = '@deepseek-ai/dsh-experimental-harness2'
+const HARNESS2_PACKAGE = 'packages/subagent/harness2/package.json'
+const HARNESS2_NAME = '@deepseek-ai/dsh-harness2'
 const HARNESS2_LICENSE = '(MIT AND Apache-2.0)'
 const DSH_MIT_SHA256 = 'ebb4f09972aee8608be255debaf78451a68e95c290f55c240dec2ecfa16ea6be'
 const UPSTREAM_APACHE_SHA256 = 'cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30'
@@ -19,7 +19,7 @@ const UPSTREAM_REVISION = '1cfe254e8d25b15f37048c3730134686abe60335'
 
 function inspectHarness2Notices(root: string, manifest: Record<string, unknown>): string[] {
   const failures: string[] = []
-  const directory = 'packages/experimental/harness2'
+  const directory = 'packages/subagent/harness2'
   const licensePath = resolve(root, directory, 'LICENSE')
   const noticePath = resolve(root, directory, 'NOTICE')
   if (!existsSync(licensePath)) failures.push(`${directory}/LICENSE: missing mixed-scope license texts.`)

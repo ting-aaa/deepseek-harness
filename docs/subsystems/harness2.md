@@ -8,7 +8,7 @@ English | [中文](harness2.zh.md)
 
 ## Summary
 
-This reference defines how experimental Harness² refinement fits DSH child sessions and durable domain storage. A run compares candidate harnesses for one task and returns a preview; remembering a result is a separate operation. The [package reference](../../packages/experimental/harness2/README.md) owns configuration and operating limits, and the [user guide](../user/guide/harness2.md) explains preview and review.
+This reference defines how built-in Harness² refinement uses DSH child sessions and durable domain storage. A run compares candidate harnesses for one task and returns a preview; remembering a result is a separate operation. The [package reference](../../packages/subagent/harness2/README.md) owns configuration and operating limits, and the [user guide](../user/guide/harness2.md) explains preview and review.
 
 ## Table of Contents
 
@@ -24,7 +24,9 @@ This reference defines how experimental Harness² refinement fits DSH child sess
 <a id="composition"></a>
 ## Composition
 
-The optional bundle composes the `ctx.harness2` service with its model-facing tools. The service owns the bounded refinement algorithm, child lifetime, audit records, and domain lesson library. The tool consumer owns argument validation and the parent-facing result. Neither changes `agent-loop` or invokes the upstream Python runner.
+The shared `dsh-base` composition mounts `ctx.harness2` and its model-facing tools for full base-backed profiles, including headless, SDK, and ACP. Web and Desktop keep the service on the host and mount the tools in the `standard`, `cordis`, and `ptc` agent presets. The Web `minimal` preset and the standalone `sdk-minimal` profile keep their intentionally smaller tool catalogs. No separate addon installation is required.
+
+The service owns the bounded refinement algorithm, child lifetime, audit events, and domain lesson library. The tool consumer owns argument validation and the parent-facing result. Neither changes `agent-loop` or invokes the upstream Python runner. Tool availability does not trigger a refinement or accept a lesson automatically.
 
 ```text
 harness2 tool -> ctx.harness2 -> managed DSH child sessions
@@ -32,7 +34,7 @@ harness2 tool -> ctx.harness2 -> managed DSH child sessions
 harness2_remember ---------> explicit domain-library update
 ```
 
-The service uses the existing [subagent](subagent.md), [tool execution](tools.md), and [storage](storage.md) APIs. Child model selection and logging remain DSH-owned. The [algorithm description](../../packages/experimental/harness2/README.md#understand-the-implementation) owns the individual phases and upstream attribution.
+The service uses the existing [subagent](subagent.md), [tool execution](tools.md), and [storage](storage.md) APIs. Child model selection and logging remain DSH-owned. The [algorithm description](../../packages/subagent/harness2/README.md#understand-the-implementation) owns the individual phases and upstream attribution.
 
 -----
 
@@ -43,14 +45,14 @@ A run belongs to its initiating parent Session and a caller-selected domain. The
 
 Only the originating parent can remember the preview. A new adoption requires a one-time grant from the user-approval service during an open parent turn; missing or refused approval does not update the library. Repeating the currently accepted run is idempotent; a different run based on a stale library revision cannot overwrite a newer lesson. Accepted guidance and reflection are available to later Harness² runs in that domain, not injected into ordinary conversations or global configuration.
 
-Domain storage owns durable run and lesson records; child Session logs own model-visible requests and responses. Parent audit records describe computation and adoption intent, not successful storage commits. Persistence failure is not evidence that a lesson was accepted. Cancellation cannot roll back a final durable write already in progress; a successful commit returns success. Durable stage checkpoints can resume an interrupted run only with the same parent and run fingerprint.
+Domain storage owns durable run and lesson records; child Session logs own model-visible requests and responses. Native `harness2/*` Session events describe computation and adoption intent, not successful storage commits. Persistence failure is not evidence that a lesson was accepted. Cancellation cannot roll back a final durable write already in progress; a successful commit returns success. Durable stage checkpoints can resume an interrupted run only with the same parent and run fingerprint.
 
 -----
 
 <a id="requests-and-results"></a>
 ## Requests and results
 
-The service accepts an exact live parent and returns a preview with stable child references. These definitions are copied from the [declaring module](../../packages/experimental/harness2/src/types.ts); the storage library remains authoritative for accepted lessons.
+The service accepts an exact live parent and returns a preview with stable child references. These definitions are copied from the [declaring module](../../packages/subagent/harness2/src/types.ts); the storage library remains authoritative for accepted lessons.
 
 ```ts type-equiv
 /** Identifies one preview, independently of its child Sessions. */
@@ -58,7 +60,7 @@ type Harness2RunId = Branded<'Harness2RunId'>
 ```
 
 ```ts type-equiv
-/** A bounded preview; only task text and explicitly remembered domain guidance cross into children. */
+/** A bounded preview using task text, remembered domain guidance, and parent-authorized read-only task tools. */
 interface Harness2Request {
   readonly parent: Agent
   readonly task: string
@@ -107,9 +109,9 @@ interface Harness2Result {
 <a id="trust-and-model-history"></a>
 ## Trust and model history
 
-Proposals, probe reports, and saved lessons remain lower-trust model outputs, not replacements for host policy. Rollout children install only validated native candidate resources; scripts and middleware additionally require explicit isolation configuration and per-execution approval. The [package reference](../../packages/experimental/harness2/README.md#use-this-package) owns the complete capabilities and limits.
+Proposals, probe reports, and saved lessons remain lower-trust model outputs, not replacements for host policy. Answer rollouts install validated native candidate resources; they and their candidate delegates receive configured read-only task tools captured from the initiating parent. The default task-tool allowlist is `read`, `read_image`, `glob`, `grep`, `web_search`, and `web_fetch`; only a subset is accepted, and `readTools: []` disables it. Proposal, composition, selection, and reflection stages receive no parent task tools. Admission is rechecked at each child step; dispatch also checks captured definition identity and the live parent’s guards. Speculative stages receive no parent shell, write, edit, or change-application tools. Scripts and middleware use the built-in portable WASI runtime and require per-execution approval addressed to the initiating parent; `runtime: null` disables them. The [package reference](../../packages/subagent/harness2/README.md#use-this-package) owns the complete capabilities and limits.
 
-Fresh child contexts do not inherit the parent conversation. The caller must include all task material needed for comparison. Stored evidence and model assessments are not independent verification of correctness or task completion.
+Fresh child contexts do not inherit the parent conversation. The caller must supply task material or input references accessible through the admitted read-only tools. After reviewing a selected preview, the parent applies any desired changes separately through its ordinary tool loop and permissions. Stored evidence and model assessments are not independent verification of correctness or task completion.
 
 -----
 
@@ -152,7 +154,7 @@ remember(parent: Agent, id: Harness2RunId, options: { signal: AbortSignal; callI
 
 Types: [Agent](core.md) · [ToolCallId](core.md)
 
-Source: [`packages/experimental/harness2/src/index.ts`](../../packages/experimental/harness2/src/index.ts)
+Source: [`packages/subagent/harness2/src/index.ts`](../../packages/subagent/harness2/src/index.ts)
 <!-- END GENERATED cordis-surface -->
 
 -----

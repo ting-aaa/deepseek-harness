@@ -59,9 +59,9 @@ describe('DSH package license gate', () => {
 })
 
 function createHarness2(root: string): string {
-  const directory = 'packages/experimental/harness2'
+  const directory = 'packages/subagent/harness2'
   writeManifest(root, `${directory}/package.json`, {
-    name: '@deepseek-ai/dsh-experimental-harness2', license: '(MIT AND Apache-2.0)', files: ['NOTICE'],
+    name: '@deepseek-ai/dsh-harness2', license: '(MIT AND Apache-2.0)', files: ['NOTICE'],
   })
   for (const file of ['LICENSE', 'NOTICE']) {
     writeFileSync(join(root, directory, file), readFileSync(join(import.meta.dirname, '..', directory, file)))
@@ -79,14 +79,14 @@ describe('Harness² translated-source exception', () => {
   it.each(['packages/experimental/other', 'packages/core/harness2'])('does not extend the exception to %s', (directory) => {
     const root = createWorkspace()
     writeManifest(root, `${directory}/package.json`, {
-      name: '@deepseek-ai/dsh-experimental-harness2', license: '(MIT AND Apache-2.0)',
+      name: '@deepseek-ai/dsh-harness2', license: '(MIT AND Apache-2.0)',
     })
     expect(inspectDshPackageLicenses(root).failures[0]).toContain('must declare "license": "MIT"')
   })
 
   it('does not extend the exception to another identity at the same path', () => {
     const root = createWorkspace()
-    writeManifest(root, 'packages/experimental/harness2/package.json', {
+    writeManifest(root, 'packages/subagent/harness2/package.json', {
       name: '@deepseek-ai/dsh-other', license: '(MIT AND Apache-2.0)',
     })
     expect(inspectDshPackageLicenses(root).failures[0]).toContain('must declare "license": "MIT"')
@@ -95,8 +95,8 @@ describe('Harness² translated-source exception', () => {
   it.each(['MIT', 'Apache-2.0', '(MIT OR Apache-2.0)'])('rejects incorrect attribution scope %s', (license) => {
     const root = createWorkspace()
     createHarness2(root)
-    writeManifest(root, 'packages/experimental/harness2/package.json', {
-      name: '@deepseek-ai/dsh-experimental-harness2', license, files: ['NOTICE'],
+    writeManifest(root, 'packages/subagent/harness2/package.json', {
+      name: '@deepseek-ai/dsh-harness2', license, files: ['NOTICE'],
     })
     expect(inspectDshPackageLicenses(root).failures[0]).toContain('must declare "license": "(MIT AND Apache-2.0)"')
   })
@@ -120,8 +120,8 @@ describe('Harness² translated-source exception', () => {
   it('rejects notice omission from the publication allowlist', () => {
     const root = createWorkspace()
     createHarness2(root)
-    writeManifest(root, 'packages/experimental/harness2/package.json', {
-      name: '@deepseek-ai/dsh-experimental-harness2', license: '(MIT AND Apache-2.0)', files: ['lib/index.js'],
+    writeManifest(root, 'packages/subagent/harness2/package.json', {
+      name: '@deepseek-ai/dsh-harness2', license: '(MIT AND Apache-2.0)', files: ['lib/index.js'],
     })
     expect(inspectDshPackageLicenses(root).failures[0]).toContain('published files must include NOTICE')
   })

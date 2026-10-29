@@ -71,6 +71,7 @@ const ASSET_GLOBS = [
   'node_modules/**/@deepseek-ai/dsh-web-frontend/dist/**/*',
   // The diagnosis provider extracts its PowerShell script for an external interpreter.
   'node_modules/**/@deepseek-ai/dsh-sandbox-windows-acl/assets/**/*',
+  'node_modules/**/@deepseek-ai/dsh-harness2/assets/**/*',
 ]
 
 const PLATFORMS = ['linux', 'macos', 'win'] as const

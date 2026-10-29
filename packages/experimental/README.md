@@ -45,9 +45,6 @@ Promotion requires a named product role, documented public behavior and limitati
 | [`personalized-recommendations`](personalized-recommendations/README.md) | Default-disabled bundle of personalized pages, plugin recommendations and their action cards | — |
 | [`tool-session-query`](tool-session-query/README.md) | Workspace-authorized model session search, trace, and event reads | — |
 | [`session-search`](session-search/README.md) | Optional experimental global session search tools | — |
-| [`harness2`](harness2/README.md) | Bounded text-guidance refinement and durable domain lessons | `ctx.harness2` |
-| [`tool-harness2`](tool-harness2/README.md) | Preview Harness² results and explicitly remember lessons | — |
-| [`harness2-bundle`](harness2-bundle/README.md) | Explicitly enabled Harness² composition | — |
 | [`ralph-bundle`](ralph-bundle/README.md) | Optional repeated delegation with an isolated workflow engine | — |
 | [`terminal-bundle`](terminal-bundle/README.md) | Optional global persistent terminal tools | — |
 | [`badge-skill-bundle`](badge-skill-bundle/README.md) | Optional powered-by-dsh badge skill | — |
@@ -116,7 +113,6 @@ Promotion requires a named product role, documented public behavior and limitati
 - [Computer use](../../docs/subsystems/computer-use.md) — desktop provider choices.
 - [Browser use](../../docs/subsystems/browser-use.md) — browser provider choices and Session ownership.
 - [Agent Teams subsystem](../../docs/subsystems/agent-team.md) — durable Team types and the `ctx.agentTeams` service API.
-- [Harness² subsystem](../../docs/subsystems/harness2.md) — refinement runs, child isolation, and lesson ownership.
 - [Experimental subtree rules](AGENTS.md) — what experimental status does and does not relax.
 
 -----

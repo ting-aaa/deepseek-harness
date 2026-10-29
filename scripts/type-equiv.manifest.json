@@ -2865,22 +2865,22 @@
     {
       "doc": "docs/subsystems/harness2.md",
       "symbol": "Harness2RunId",
-      "source": "packages/experimental/harness2/src/types.ts"
+      "source": "packages/subagent/harness2/src/types.ts"
     },
     {
       "doc": "docs/subsystems/harness2.md",
       "symbol": "Harness2Request",
-      "source": "packages/experimental/harness2/src/types.ts"
+      "source": "packages/subagent/harness2/src/types.ts"
     },
     {
       "doc": "docs/subsystems/harness2.md",
       "symbol": "Harness2Stage",
-      "source": "packages/experimental/harness2/src/types.ts"
+      "source": "packages/subagent/harness2/src/types.ts"
     },
     {
       "doc": "docs/subsystems/harness2.md",
       "symbol": "Harness2Result",
-      "source": "packages/experimental/harness2/src/types.ts"
+      "source": "packages/subagent/harness2/src/types.ts"
     }
   ]
 }

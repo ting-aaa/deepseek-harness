@@ -1185,102 +1185,6 @@ export interface Config {
 ```
 <!-- END GENERATED config-catalog:@deepseek-ai/dsh-experimental-forge-session -->
 
-<!-- BEGIN GENERATED config-catalog:@deepseek-ai/dsh-experimental-harness2 -->
-<a id="deepseek-aidsh-experimental-harness2"></a>
-
-## `@deepseek-ai/dsh-experimental-harness2`
-
-- `inject`: `agents` · `subagents` · `tools` · `storageDomain` · `approval`
-- `source`: [`packages/experimental/harness2/src/index.ts:35`](../packages/experimental/harness2/src/index.ts)
-
-```ts config-catalog
-/** Deployment-owned budgets; the tools cannot raise any of these limits. */
-export interface Config {
-  /** Fresh, local, structured-output subagent provider; defaults to spawn. */
-  provider?: string
-  /** Default recursion mode, overridable within the configured k budget. */
-  mode?: 'parallel' | 'sequential'
-  /** Default recursion width/depth. */
-  k?: number
-  /** Maximum request recursion width/depth. */
-  maxK?: number
-  /** Maximum candidate file count. */
-  maxCandidateFiles?: number
-  /** Maximum UTF-8 bytes in one candidate file. */
-  maxCandidateFileBytes?: number
-  /** Maximum UTF-8 bytes in the complete candidate. */
-  maxCandidateBytes?: number
-  /** Optional Linux namespace-isolated execution; absent rejects executable candidates. */
-  runtime?: IsolatedRuntimeConfig | null
-  /** Retained full-tree experiences per domain. */
-  maxLibraryEntries?: number
-  /** Maximum concurrent top-level children; delegated leaf children do not hold this semaphore. */
-  maxConcurrentChildren?: number
-  /** Complete serialized execution trajectory characters per rollout, including nested children. */
-  maxTrajectoryChars?: number
-  /** Fixed baseline tree; remembered experiences are separate improvement evidence. */
-  baseCandidate?: CandidateTree
-  /** Maximum task characters; defaults to 16000. */
-  maxTaskChars?: number
-  /** Maximum characters in one candidate instruction set; defaults to 8000. */
-  maxInstructionsChars?: number
-  /** Maximum complete serialized child message characters; defaults to 64000. */
-  maxEvidenceChars?: number
-  /** Maximum answer characters; defaults to 16000. */
-  maxOutputChars?: number
-  /** Maximum rationale or reflection characters; defaults to 8000. */
-  maxReflectionChars?: number
-  /** Wall-clock milliseconds per child, including startup; defaults to 120000. */
-  childTimeoutMs?: number
-  /** Maximum admitted steps per child; defaults to 4. */
-  maxStepsPerChild?: number
-  /** Per-request output-token cap; defaults to 4096, never raises the parent's cap. */
-  maxTokensPerChild?: number
-  /** Concurrent preview ceiling; defaults to 1. */
-  maxConcurrentRuns?: number
-  /** Inactive run/checkpoint retention at admission and completed previews at commit; defaults to 50. */
-  maxSavedRuns?: number
-}
-
-/** Explicit deployment configuration; unsupported platforms and namespace failures reject.
- * Adversarial code requires an externally memory-bounded container/cgroup; these limits do not bound aggregate kernel memory.
- */
-export interface IsolatedRuntimeConfig {
-  /** Absolute path to the trusted Linux bubblewrap executable; namespace setup failures reject. */
-  bubblewrapPath: string
-  /** Absolute path to trusted prlimit inside the read-only /usr mount. */
-  prlimitPath: string
-  /** Absolute path to trusted Python 3 inside /usr, used for scripts and the worker supervisor. */
-  pythonPath: string
-  /** Absolute path to trusted Node 24 or newer, mounted read-only for native TypeScript middleware. */
-  nodePath: string
-  /** Existing trusted private directory for fresh candidate files; each run removes its owned subdirectory after worker exit. */
-  scratchDirectory: string
-  /** Wall-clock milliseconds per isolated process including setup; timeout kills and drains the worker before cleanup. */
-  timeoutMs: number
-  /** Maximum UTF-8 bytes in the complete JSON request, checked before approval. */
-  maxInputBytes: number
-  /** Maximum combined stdout and stderr bytes; oversized worker output fails instead of truncating JSON. */
-  maxOutputBytes: number
-  /** Per-process virtual-address-space ceiling in bytes (RLIMIT_AS), not aggregate RSS; Node requires larger reservations. */
-  memoryBytes: number
-  /** Byte quota on each private /work and /tmp tmpfs and per-file size ceiling; these mounts are discarded after execution. */
-  workspaceBytes: number
-  /** Per-process CPU-time ceiling in seconds (RLIMIT_CPU); the wall-clock timeout also covers idle descendants. */
-  cpuSeconds: number
-  /** RLIMIT_NPROC ceiling for processes/threads charged to the worker real user ID; host user activity can consume this allowance. */
-  maxProcesses: number
-  /** Maximum exported regular-file count from /work; host validation also rejects duplicate and unsafe paths. */
-  maxArtifactFiles: number
-  /** Maximum total decoded bytes in returned artifacts; files remain logged data and are not installed into the parent workspace. */
-  maxArtifactBytes: number
-}
-
-/** UTF-8 files on the native Harness² editable surface. */
-export type CandidateTree = Readonly<Record<string, string>>
-```
-<!-- END GENERATED config-catalog:@deepseek-ai/dsh-experimental-harness2 -->
-
 <!-- BEGIN GENERATED config-catalog:@deepseek-ai/dsh-experimental-inspector -->
 <a id="deepseek-aidsh-experimental-inspector"></a>
 
@@ -1714,6 +1618,131 @@ export interface Config {
 }
 ```
 <!-- END GENERATED config-catalog:@deepseek-ai/dsh-goal -->
+
+<!-- BEGIN GENERATED config-catalog:@deepseek-ai/dsh-harness2 -->
+<a id="deepseek-aidsh-harness2"></a>
+
+## `@deepseek-ai/dsh-harness2`
+
+- `inject`: `agents` · `subagents` · `tools` · `storageDomain` · `approval`
+- `source`: [`packages/subagent/harness2/src/index.ts:41`](../packages/subagent/harness2/src/index.ts)
+
+```ts config-catalog
+/** Deployment-owned budgets; the tools cannot raise any of these limits. */
+export interface Config {
+  /** Fresh, local, structured-output subagent provider; defaults to spawn. */
+  provider?: string
+  /** Default recursion mode, overridable within the configured k budget. */
+  mode?: 'parallel' | 'sequential'
+  /** Default recursion width/depth. */
+  k?: number
+  /** Maximum request recursion width/depth. */
+  maxK?: number
+  /** Maximum candidate file count. */
+  maxCandidateFiles?: number
+  /** Maximum UTF-8 bytes in one candidate file. */
+  maxCandidateFileBytes?: number
+  /** Maximum UTF-8 bytes in the complete candidate. */
+  maxCandidateBytes?: number
+  /** Portable WASI execution by default; explicit Linux namespace configuration remains supported. Null disables executable candidates. */
+  runtime?: WasiRuntimeConfig | IsolatedRuntimeConfig | null
+  /** Read-only DSH task tools borrowed from the initiating parent; never shell, writes, or application. */
+  readTools?: readonly ReadOnlyTaskTool[]
+  /** Retained full-tree experiences per domain. */
+  maxLibraryEntries?: number
+  /** Maximum concurrent top-level children; delegated leaf children do not hold this semaphore. */
+  maxConcurrentChildren?: number
+  /** Complete serialized execution trajectory characters per rollout, including nested children. */
+  maxTrajectoryChars?: number
+  /** Fixed baseline tree; remembered experiences are separate improvement evidence. */
+  baseCandidate?: CandidateTree
+  /** Maximum task characters; defaults to 16000. */
+  maxTaskChars?: number
+  /** Maximum characters in one candidate instruction set; defaults to 8000. */
+  maxInstructionsChars?: number
+  /** Maximum complete serialized child message characters; defaults to 64000. */
+  maxEvidenceChars?: number
+  /** Maximum answer characters; defaults to 16000. */
+  maxOutputChars?: number
+  /** Maximum rationale or reflection characters; defaults to 8000. */
+  maxReflectionChars?: number
+  /** Wall-clock milliseconds per child, including startup; defaults to 120000. */
+  childTimeoutMs?: number
+  /** Maximum admitted steps per child; defaults to 4. */
+  maxStepsPerChild?: number
+  /** Per-request output-token cap; defaults to 4096, never raises the parent's cap. */
+  maxTokensPerChild?: number
+  /** Concurrent preview ceiling; defaults to 1. */
+  maxConcurrentRuns?: number
+  /** Inactive run/checkpoint retention at admission and completed previews at commit; defaults to 50. */
+  maxSavedRuns?: number
+}
+
+/** Deployment-owned portable execution limits; omitted values use the built-in budgets. */
+export interface WasiRuntimeConfig {
+  /** Portable WebAssembly interpreter backend. */
+  backend: 'wasi'
+  /** Wall-clock execution deadline, including worker startup and interpreter compilation. */
+  timeoutMs?: number
+  /** Maximum UTF-8 JSON request bytes. */
+  maxInputBytes?: number
+  /** Maximum combined standard-stream and serialized result bytes. */
+  maxOutputBytes?: number
+  /** Maximum guest WebAssembly linear-memory bytes; excludes trusted host/runtime overhead. */
+  memoryBytes?: number
+  /** Independent byte ceiling for each in-memory /work and /tmp filesystem. */
+  workspaceBytes?: number
+  /** Directory and file entry ceiling per writable virtual filesystem. */
+  maxWorkspaceEntries?: number
+  /** Conservative CPU allowance, enforced by an equal or shorter wall-clock deadline. */
+  cpuSeconds?: number
+  /** Maximum number of exported regular files. */
+  maxArtifactFiles?: number
+  /** Maximum total decoded artifact bytes. */
+  maxArtifactBytes?: number
+}
+
+/** Explicit deployment configuration; unsupported platforms and namespace failures reject.
+ * Adversarial code requires an externally memory-bounded container/cgroup; these limits do not bound aggregate kernel memory.
+ */
+export interface IsolatedRuntimeConfig {
+  /** Absolute path to the trusted Linux bubblewrap executable; namespace setup failures reject. */
+  bubblewrapPath: string
+  /** Absolute path to trusted prlimit inside the read-only /usr mount. */
+  prlimitPath: string
+  /** Absolute path to trusted Python 3 inside /usr, used for scripts and the worker supervisor. */
+  pythonPath: string
+  /** Absolute path to trusted Node 24 or newer, mounted read-only for native TypeScript middleware. */
+  nodePath: string
+  /** Existing trusted private directory for fresh candidate files; each run removes its owned subdirectory after worker exit. */
+  scratchDirectory: string
+  /** Wall-clock milliseconds per isolated process including setup; timeout kills and drains the worker before cleanup. */
+  timeoutMs: number
+  /** Maximum UTF-8 bytes in the complete JSON request, checked before approval. */
+  maxInputBytes: number
+  /** Maximum combined stdout and stderr bytes; oversized worker output fails instead of truncating JSON. */
+  maxOutputBytes: number
+  /** Per-process virtual-address-space ceiling in bytes (RLIMIT_AS), not aggregate RSS; Node requires larger reservations. */
+  memoryBytes: number
+  /** Byte quota on each private /work and /tmp tmpfs and per-file size ceiling; these mounts are discarded after execution. */
+  workspaceBytes: number
+  /** Per-process CPU-time ceiling in seconds (RLIMIT_CPU); the wall-clock timeout also covers idle descendants. */
+  cpuSeconds: number
+  /** RLIMIT_NPROC ceiling for processes/threads charged to the worker real user ID; host user activity can consume this allowance. */
+  maxProcesses: number
+  /** Maximum exported regular-file count from /work; host validation also rejects duplicate and unsafe paths. */
+  maxArtifactFiles: number
+  /** Maximum total decoded bytes in returned artifacts; files remain logged data and are not installed into the parent workspace. */
+  maxArtifactBytes: number
+}
+
+/** Deployment may select a subset of the supported read-only task operations. */
+export type ReadOnlyTaskTool = typeof READ_ONLY_TASK_TOOLS[number]
+
+/** UTF-8 files on the native Harness² editable surface. */
+export type CandidateTree = Readonly<Record<string, string>>
+```
+<!-- END GENERATED config-catalog:@deepseek-ai/dsh-harness2 -->
 
 <!-- BEGIN GENERATED config-catalog:@deepseek-ai/dsh-headless -->
 <a id="deepseek-aidsh-headless"></a>
@@ -4994,7 +5023,6 @@ export interface Config {
 | `@deepseek-ai/dsh-experimental-client-ui-voice-input` | — | [`packages/experimental/client-ui-voice-input/src/index.ts`](../packages/experimental/client-ui-voice-input/src/index.ts) |
 | `@deepseek-ai/dsh-experimental-computer-use-cua-driver-native` | `computerUse` · `tools` · `systemPrompt` | [`packages/experimental/computer-use-cua-driver-native/src/index.ts`](../packages/experimental/computer-use-cua-driver-native/src/index.ts) |
 | `@deepseek-ai/dsh-experimental-session-inspector` | — | [`packages/experimental/session-inspector/src/index.ts`](../packages/experimental/session-inspector/src/index.ts) |
-| `@deepseek-ai/dsh-experimental-tool-harness2` | `harness2` · `tools` | [`packages/experimental/tool-harness2/src/index.ts`](../packages/experimental/tool-harness2/src/index.ts) |
 | `@deepseek-ai/dsh-experimental-tool-worktree` | `tools` · `worktrees` | [`packages/experimental/tool-worktree/src/index.ts`](../packages/experimental/tool-worktree/src/index.ts) |
 | `@deepseek-ai/dsh-fs-observation-policy` | — | [`packages/fs/fs-observation-policy/src/index.ts`](../packages/fs/fs-observation-policy/src/index.ts) |
 | `@deepseek-ai/dsh-fs-ssh` | `ssh` · `sandboxPolicy` | [`packages/ssh/fs-ssh/src/index.ts`](../packages/ssh/fs-ssh/src/index.ts) |
@@ -5024,6 +5052,7 @@ export interface Config {
 | `@deepseek-ai/dsh-tool-call-timeout-policy` | `tools` | [`packages/guard/timeout-policy/src/index.ts`](../packages/guard/timeout-policy/src/index.ts) |
 | `@deepseek-ai/dsh-tool-cordis` | `tools` · `cordisInspect` | [`packages/extensions/tool-cordis/src/index.ts`](../packages/extensions/tool-cordis/src/index.ts) |
 | `@deepseek-ai/dsh-tool-executor-native` | `tools` | [`packages/core/tool-executor-native/src/index.ts`](../packages/core/tool-executor-native/src/index.ts) |
+| `@deepseek-ai/dsh-tool-harness2` | `harness2` · `tools` | [`packages/subagent/tool-harness2/src/index.ts`](../packages/subagent/tool-harness2/src/index.ts) |
 | `@deepseek-ai/dsh-tool-schedule` | `tools` | [`packages/schedule/tool-schedule/src/index.ts`](../packages/schedule/tool-schedule/src/index.ts) |
 | `@deepseek-ai/dsh-tool-subagent-control` | `tools` · `subagents` · `agents` | [`packages/subagent/tool-subagent-control/src/index.ts`](../packages/subagent/tool-subagent-control/src/index.ts) |
 | `@deepseek-ai/dsh-tool-working-directory` | `tools` · `workingDirectory` | [`packages/session/tool-working-directory/src/index.ts`](../packages/session/tool-working-directory/src/index.ts) |
@@ -5086,7 +5115,6 @@ export interface Config {
 | `@deepseek-ai/dsh-experimental-browser-use-runtime` | — | [`packages/experimental/browser-use-runtime/src/index.ts`](../packages/experimental/browser-use-runtime/src/index.ts) |
 | `@deepseek-ai/dsh-experimental-cot-translation-bundle` | — | [`packages/experimental/cot-translation-bundle/src/index.ts`](../packages/experimental/cot-translation-bundle/src/index.ts) |
 | `@deepseek-ai/dsh-experimental-forge-bundle` | — | [`packages/experimental/forge-bundle/src/index.ts`](../packages/experimental/forge-bundle/src/index.ts) |
-| `@deepseek-ai/dsh-experimental-harness2-bundle` | — | [`packages/experimental/harness2-bundle/src/index.ts`](../packages/experimental/harness2-bundle/src/index.ts) |
 | `@deepseek-ai/dsh-experimental-inspector-profile` | — | [`packages/experimental/inspector-profile/src/index.ts`](../packages/experimental/inspector-profile/src/index.ts) |
 | `@deepseek-ai/dsh-experimental-liveshare` | — | [`packages/experimental/liveshare/src/index.ts`](../packages/experimental/liveshare/src/index.ts) |
 | `@deepseek-ai/dsh-experimental-liveshare-protocol` | — | [`packages/experimental/liveshare-protocol/src/index.ts`](../packages/experimental/liveshare-protocol/src/index.ts) |

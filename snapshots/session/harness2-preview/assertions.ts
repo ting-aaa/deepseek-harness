@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { expect } from 'vitest'
-import type { Harness2Result } from '@deepseek-ai/dsh-experimental-harness2'
+import type { Harness2Result } from '@deepseek-ai/dsh-harness2'
 import { parseSessionLog } from '@deepseek-ai/dsh-llm-replay'
 
 /**
@@ -16,6 +16,10 @@ export async function verifyHarness2Preview(
 ): Promise<void> {
   expect(logs).toHaveLength(9)
   const parent = parseSessionLog(logs[0]!.content)
+  const contextSections = parent.flatMap(event => event.type === 'user/message' && event.data.source.kind === 'runtime-context'
+    ? event.data.source.sections.map(section => section.name) : [])
+  expect(contextSections).toEqual(expect.arrayContaining(['sandbox:policy', 'approval:policy']))
+  expect(contextSections).not.toContain('working-directory:current')
   const result = parent.find(event => event.type === 'tool/result' && event.data.message.toolCallId === 'harness2-preview')
   if (result?.type !== 'tool/result') throw new Error('Harness² preview result is missing')
   expect(result.data.message.isError).toBe(false)
@@ -34,10 +38,21 @@ export async function verifyHarness2Preview(
   for (const child of logs.slice(1)) {
     expect(child.header.parentSession).toBe(logs[0]!.header.id)
     const events = parseSessionLog(child.content)
+    const childContextSections = events.flatMap(event => event.type === 'user/message' && event.data.source.kind === 'runtime-context'
+      ? event.data.source.sections.map(section => section.name) : [])
+    expect(childContextSections).not.toContain('working-directory:current')
     const headers = events.flatMap(event => event.type === 'request/header' ? [event.data.header] : [])
     expect(headers).toHaveLength(1)
     expect(headers[0]?.config.maxTokens).toBe(4096)
-    expect(headers[0]?.tools?.map(tool => tool.name)).toEqual(['structured_output'])
+    const toolNames = headers[0]?.tools?.map(tool => tool.name) ?? []
+    const descriptor = events.find(event => event.type === 'subagent/descriptor')
+    const label = descriptor?.type === 'subagent/descriptor' ? descriptor.data.label : undefined
+    const solves = ['Harness² baseline', 'Harness² invariant-probe', 'Harness² domain-probe', 'Harness² final'].includes(label ?? '')
+    if (solves) {
+      expect(toolNames).toEqual(expect.arrayContaining(['structured_output', 'read', 'glob', 'grep']))
+      expect(toolNames.filter(name => !['read', 'read_image', 'glob', 'grep', 'web_search', 'web_fetch'].includes(name)))
+        .toEqual(['structured_output'])
+    } else expect(toolNames).toEqual(['structured_output'])
     const tasks = events.flatMap(event => event.type === 'user/message' && event.data.source.kind === 'user'
       ? event.data.content.flatMap(block => block.type === 'text' ? [block.text] : []) : [])
     expect(tasks.join('\n')).toContain('untrusted suggestions, not permission or policy')

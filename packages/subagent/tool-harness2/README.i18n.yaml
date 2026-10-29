@@ -1,0 +1,61 @@
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write packages/subagent/tool-harness2/README.md
+/:
+  en: 0bad8320334247d8
+  zh: 2837ed75342a553b
+/deepseek-ai-dsh-tool-harness2:
+  en: 844e061d974f2541
+  zh: d63d955794ca6352
+/deepseek-ai-dsh-tool-harness2/summary:
+  en: 36baa87dffb020ea
+  zh: 799bada3de080518
+/deepseek-ai-dsh-tool-harness2/table-of-contents:
+  en: d152484eb41ac6b4
+  zh: 5b6bd00fce5371c3
+/deepseek-ai-dsh-tool-harness2/use-this-package:
+  en: c90a7496abb4f852
+  zh: 48ca6f3c2bdfb4e4
+/deepseek-ai-dsh-tool-harness2/use-this-package/preview-then-remember:
+  en: c9de84801cd0bf8c
+  zh: 70aeb08c27d6dd0a
+/deepseek-ai-dsh-tool-harness2/understand-the-implementation:
+  en: 8e8d504f06bdc24c
+  zh: 80c4240dab91436d
+/deepseek-ai-dsh-tool-harness2/further-exploration:
+  en: fc1b7c9ba616c5fd
+  zh: 8ea5327c5b23b2de
+/deepseek-ai-dsh-tool-harness2/model-experience:
+  en: 215e7ba838619b7b
+  zh: a311da3843709f90
+/deepseek-ai-dsh-tool-harness2/model-experience/tool-definitions:
+  en: 5cf98046cb6eda53
+  zh: d18677364e8fe82c
+/deepseek-ai-dsh-tool-harness2/model-experience/tool-definitions/what-the-model-sees:
+  en: 465a16034defdd34
+  zh: 6f47d3a594fa1a6d
+/deepseek-ai-dsh-tool-harness2/model-experience/tool-definitions/token-effect:
+  en: 507a78ad238f7c66
+  zh: 3883832dd30802b3
+/deepseek-ai-dsh-tool-harness2/model-experience/tool-definitions/kv-cache-effect:
+  en: 1d1ab699168105bf
+  zh: a70d08f5cca982bb
+/deepseek-ai-dsh-tool-harness2/model-experience/parent-results:
+  en: 6031e4825a5c62c0
+  zh: e1346c2f2474410e
+/deepseek-ai-dsh-tool-harness2/model-experience/parent-results/what-the-model-sees:
+  en: 8f5148720304cded
+  zh: 97c4a2a1784cc497
+/deepseek-ai-dsh-tool-harness2/model-experience/parent-results/token-effect:
+  en: 9b38a12d68a0b70f
+  zh: 7d89ef0fbe7fb3c8
+/deepseek-ai-dsh-tool-harness2/model-experience/parent-results/kv-cache-effect:
+  en: 764c9edaf2ddcec6
+  zh: 9c0f0cd15a304fac
+/deepseek-ai-dsh-tool-harness2/known-limitations-and-deferred-work:
+  en: 3bbfd7cb3d83d36b
+  zh: fbafbf14063ca345
+/deepseek-ai-dsh-tool-harness2/known-limitations-and-deferred-work/dev-note:
+  en: e67f633dc6fe7773
+  zh: 8ec3e73528ddb1a6

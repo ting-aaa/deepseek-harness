@@ -85,7 +85,7 @@ import * as ToolWeb from '@deepseek-ai/dsh-tool-web'
 import WorkflowEngine from '@deepseek-ai/dsh-workflow'
 import type { WorkflowRun, WorkflowStartRequest } from '@deepseek-ai/dsh-workflow'
 import * as ToolRalph from '@deepseek-ai/dsh-tool-ralph'
-import * as ToolHarness2 from '@deepseek-ai/dsh-experimental-tool-harness2'
+import * as ToolHarness2 from '@deepseek-ai/dsh-tool-harness2'
 import * as ToolWorkflow from '@deepseek-ai/dsh-tool-workflow'
 import * as ToolWorkspaceDependencies from '@deepseek-ai/dsh-tool-workspace-dependencies'
 import { githubSlug } from './verify-md-links.ts'
@@ -492,11 +492,11 @@ const TOOL_PACKAGES: ToolPackage[] = [
       'The lsp tool keeps provider selection and language-server subprocesses behind ctx.lsp, so its model-visible schema stays stable across providers. Requires a registered provider (e.g. `@deepseek-ai/dsh-lsp-stdio`) at runtime; without one, a query returns the structured `LSP_UNAVAILABLE` error rather than changing the schema.',
   },
   {
-    pkg: '@deepseek-ai/dsh-experimental-tool-harness2',
+    pkg: '@deepseek-ai/dsh-tool-harness2',
     dir: 'tool-harness2',
-    source: 'packages/experimental/tool-harness2/src/index.ts',
+    source: 'packages/subagent/tool-harness2/src/index.ts',
     requires: ['ctx.tools', 'ctx.harness2', 'a calling Agent'],
-    writes: ['tool/call', 'tool/result', 'plugin:harness2/*', 'child Sessions', 'Harness² preview and lesson storage'],
+    writes: ['tool/call', 'tool/result', 'harness2/*', 'child Sessions', 'Harness² preview and lesson storage'],
     async mount(ctx) {
       ctx.provide('harness2', {
         run: () => Promise.reject(new Error('gen-tool-catalog: Harness² execution is unavailable during schema harvest')),
@@ -504,7 +504,7 @@ const TOOL_PACKAGES: ToolPackage[] = [
       })
       await ctx.plugin(ToolHarness2)
     },
-    note: 'Explicit experimental composition only. Bounded recursive child runs compare candidate-scoped resources; a separate approval-gated tool adopts mode/domain guidance without changing parent policy or prompts.',
+    note: 'Included in full base-backed profiles and the Web/Desktop standard, cordis, and ptc presets. Bounded solver children use parent-authorized read-only task tools; the parent applies selected work, and a separate approval-gated tool adopts domain guidance.',
   },
   {
     pkg: '@deepseek-ai/dsh-tool-ralph',

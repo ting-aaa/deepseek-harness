@@ -823,8 +823,16 @@ const SERVICE_ROLES: ServiceRole[] = [
     title: 'Subagent provider and continuation service',
     mode: 'seam',
     implementations: ['subagent-spawn-in-process', 'subagent-fork-in-process', 'subagent-acp', 'subagent-codex', 'subagent-claude-code', 'subagent-dsh-sdk'],
-    consumers: ['tool-subagent', 'tool-subagent-control', 'tool-ralph'],
+    consumers: ['tool-subagent', 'tool-subagent-control', 'tool-ralph', 'harness2'],
     note: 'Providers prepare local children or execute external tasks; one activation manager owns both lifecycles. The delegation tool selects a backend, control tools deliver local follow-ups, and workflows await activation results.',
+  },
+  {
+    key: 'harness2',
+    pkg: 'harness2',
+    title: 'Bounded Harness² refinement',
+    mode: 'service',
+    consumers: ['tool-harness2'],
+    note: 'Owns bounded recursive candidate previews, managed child lifetimes, run evidence, and approval-gated domain-library adoption; the parent applies selected work through its normal tools.',
   },
   {
     key: 'speechToText',

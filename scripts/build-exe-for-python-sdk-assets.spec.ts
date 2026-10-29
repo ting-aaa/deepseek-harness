@@ -54,12 +54,15 @@ describe('Python runtime executable assets', () => {
       `${modules}/@deepseek-ai/dsh-web-frontend/dist/site.webmanifest`,
       `${modules}/@deepseek-ai/dsh-example/assets/icon.svg`,
       `${modules}/@deepseek-ai/dsh-sandbox-windows-acl/assets/diagnose-acl.ps1`,
+      `${modules}/@deepseek-ai/dsh-harness2/assets/cpython-wasi-3.13.11.zip`,
+      `${modules}/quickjs-wasi/quickjs.wasm`,
     ]
     const excluded = [
       `${modules}/@deepseek-ai/dsh-web-frontend/dist/assets/app.js.map`,
       `${modules}/@deepseek-ai/dsh-example/src/private.ts`,
       `${modules}/@deepseek-ai/dsh-example/private.py`,
       `${modules}/unrelated/assets/private.ps1`,
+      `${modules}/unrelated/assets/private.zip`,
     ]
     for (const file of [...required, ...excluded]) {
       const path = join(directory, file)

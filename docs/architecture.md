@@ -143,7 +143,7 @@ Seams are why one provider swap changes the whole product. Filesystem and subpro
 
 [Experimental Agent Teams](subsystems/agent-team.md) exposes opt-in `ctx.agentTeams` coordination with durable roster and task state plus direct inbox messaging over continuable subagents.
 
-Opt-in [Harness²](subsystems/harness2.md) compares child-session text guidance and persists accepted lessons.
+Built-in [Harness²](subsystems/harness2.md) compares child-session guidance on explicit request and persists explicitly accepted lessons.
 
 ## Where new behavior goes
 

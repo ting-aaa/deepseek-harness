@@ -45,9 +45,6 @@ kind: "package-group"
 | [`personalized-recommendations`](personalized-recommendations/README.zh.md) | 默认禁用的个性化页面、插件推荐及其操作卡片组合 | — |
 | [`tool-session-query`](tool-session-query/README.zh.md) | 按工作区授权的模型会话搜索、追踪与事件读取 | — |
 | [`session-search`](session-search/README.zh.md) | 可选实验性全局会话搜索工具 | — |
-| [`harness2`](harness2/README.zh.md) | 有界文本指导优化与持久领域经验 | `ctx.harness2` |
-| [`tool-harness2`](tool-harness2/README.zh.md) | 预览 Harness² 结果并显式保存经验的工具 | — |
-| [`harness2-bundle`](harness2-bundle/README.zh.md) | 显式启用的 Harness² 组合 | — |
 | [`ralph-bundle`](ralph-bundle/README.zh.md) | 带隔离 workflow 引擎的可选重复委派 | — |
 | [`terminal-bundle`](terminal-bundle/README.zh.md) | 可选全局持久终端工具 | — |
 | [`badge-skill-bundle`](badge-skill-bundle/README.zh.md) | 可选 powered-by-dsh 徽章技能 | — |
@@ -116,7 +113,6 @@ kind: "package-group"
 - [计算机操作](../../docs/subsystems/computer-use.zh.md)——桌面提供方选择。
 - [浏览器操作](../../docs/subsystems/browser-use.zh.md)——浏览器提供方选择与 Session 所有权。
 - [Agent Teams 子系统](../../docs/subsystems/agent-team.zh.md)——持久 Team 类型与 `ctx.agentTeams` 服务 API。
-- [Harness² 子系统](../../docs/subsystems/harness2.zh.md) — 优化运行、子会话隔离与经验归属。
 - [实验子树规则](AGENTS.md)——实验状态放宽了什么、不放宽什么。
 
 -----

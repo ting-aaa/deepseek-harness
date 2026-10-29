@@ -36,7 +36,7 @@ This table connects model-visible tool names to the plugin package and service s
 | `@deepseek-ai/dsh-tool-goal` | `create_goal`, `get_goal`, `update_goal` | `ctx.tools`, `ctx.agents`, `ctx.goals`, `ctx.systemPrompt`, `a calling Agent in an authorized open turn` | `tool/call`, `goal/change for mutations`, `tool/result` | - | create, edit, pause, and resume require direct-human root authority; complete and blocked also accept the exact current goal round. The default blocked lower bound is three admitted rounds. |
 | `@deepseek-ai/dsh-tool-schedule` | `schedule_create`, `schedule_delete`, `schedule_list`, `schedule_update` | `ctx.tools`, `ctx.schedule` | `tool/call`, `Schedule storage domain create, update, or delete`, `tool/result` | - | A preset or Agent scope mounts this package; the preset decides which agents receive the four management tools. Each call acts on the calling Agent's Session. Accepts after_seconds, explicit absolute at, bounded fixed-rate every_seconds, daily and weekly local times in an explicit IANA zone, and cron as a five-field expression. Management uses the Host storage domain; due messages resume the original Session. |
 | `@deepseek-ai/dsh-tool-lsp` | `lsp` | `ctx.workingDirectory`, `ctx.tools`, `ctx.lsp`, `ctx.systemPrompt` | `tool/call`, `tool/result` | - | The lsp tool keeps provider selection and language-server subprocesses behind ctx.lsp, so its model-visible schema stays stable across providers. Requires a registered provider (e.g. `@deepseek-ai/dsh-lsp-stdio`) at runtime; without one, a query returns the structured `LSP_UNAVAILABLE` error rather than changing the schema. |
-| `@deepseek-ai/dsh-experimental-tool-harness2` | `harness2`, `harness2_remember` | `ctx.tools`, `ctx.harness2`, `a calling Agent` | `tool/call`, `tool/result`, `plugin:harness2/*`, `child Sessions`, `Harness² preview and lesson storage` | - | Explicit experimental composition only. Bounded recursive child runs compare candidate-scoped resources; a separate approval-gated tool adopts mode/domain guidance without changing parent policy or prompts. |
+| `@deepseek-ai/dsh-tool-harness2` | `harness2`, `harness2_remember` | `ctx.tools`, `ctx.harness2`, `a calling Agent` | `tool/call`, `tool/result`, `harness2/*`, `child Sessions`, `Harness² preview and lesson storage` | - | Included in full base-backed profiles and the Web/Desktop standard, cordis, and ptc presets. Bounded solver children use parent-authorized read-only task tools; the parent applies selected work, and a separate approval-gated tool adopts domain guidance. |
 | `@deepseek-ai/dsh-tool-ralph` | `ralph` | `ctx.tools`, `ctx.workflowEngine`, `ctx.subagents`, `ctx.systemPrompt`, `a calling Agent (exec.agent parents every fresh round)` | `tool/call`, `tool/result`, `workflow and child session events during execution` | - | A fixed foreground workflow starts one fresh structured child per round; the model selects only the immutable objective and an optional round cap. |
 | `@deepseek-ai/dsh-tool-skill` | `skill` | `ctx.workingDirectory`, `ctx.tools`, `ctx.agents`, `ctx.skills` | `tool/call`, `tool/result`, `user/message replacement catalogs via agent.inject()` | - | - |
 | `@deepseek-ai/dsh-tool-session-query` | `session_event_read`, `session_event_search`, `session_event_trace`, `session_search`, `session_trace` | `ctx.tools`, `ctx.systemPrompt`, `ctx.sessionQuery`, `ctx.agents`, `a calling Agent for workspace authority` | `tool/call`, `tool/result` | - | The five read-only tools hide provider cursors and authorize every result from the immutable calling agent session. The package is opt-in; compositions that need enforced deadlines or bounded inline output also mount the generic timeout or spill policies. |
@@ -1817,13 +1817,13 @@ Source: [`packages/lsp/tool-lsp/src/index.ts`](../packages/lsp/tool-lsp/src/inde
 
 The lsp tool keeps provider selection and language-server subprocesses behind ctx.lsp, so its model-visible schema stays stable across providers. Requires a registered provider (e.g. `@deepseek-ai/dsh-lsp-stdio`) at runtime; without one, a query returns the structured `LSP_UNAVAILABLE` error rather than changing the schema.
 
-<a id="deepseek-aidsh-experimental-tool-harness2"></a>
+<a id="deepseek-aidsh-tool-harness2"></a>
 
-## `@deepseek-ai/dsh-experimental-tool-harness2`
+## `@deepseek-ai/dsh-tool-harness2`
 
 ### `harness2`
 
-Preview a bounded Harness² propose–probe–compose experiment only when the user explicitly requests Harness² or harness optimization. Runs bounded parallel or sequential recursion with durable resumable stages. Supply task material in text; children can only use candidate-scoped resources, with isolated execution requiring deployment support and approval. Returns an answer, candidate instructions, reflection, and evidence session ids. This does not verify correctness or adopt the candidate. Show the preview to the user before calling harness2_remember.
+Compare alternative approaches for a complex or uncertain task with a bounded Harness² propose–probe–compose preview when the extra exploration is useful. Runs bounded parallel or sequential recursion with durable resumable stages. Solver children may use configured read-only DSH tools within your current permissions and candidate-scoped resources; isolated code execution additionally requires approval. Speculative stages do not run shell commands, write the parent workspace, or apply external changes. Apply selected changes through the normal parent tools only after reviewing the returned evidence. Returns an answer, candidate instructions, reflection, and evidence session ids. This does not verify correctness or adopt the candidate. Show the preview to the user before calling harness2_remember.
 
 ```json
 {
@@ -1831,7 +1831,7 @@ Preview a bounded Harness² propose–probe–compose experiment only when the u
   "properties": {
     "task": {
       "type": "string",
-      "description": "Complete text task and source material, without secrets."
+      "description": "Complete task and relevant source paths or material, without secrets; permitted read-only tools may inspect task inputs."
     },
     "domain": {
       "type": "string",
@@ -1861,7 +1861,7 @@ Preview a bounded Harness² propose–probe–compose experiment only when the u
 }
 ```
 
-Source: [`packages/experimental/tool-harness2/src/index.ts`](../packages/experimental/tool-harness2/src/index.ts)
+Source: [`packages/subagent/tool-harness2/src/index.ts`](../packages/subagent/tool-harness2/src/index.ts)
 
 ### `harness2_remember`
 
@@ -1882,9 +1882,9 @@ Remember a reviewed Harness² preview only after the user explicitly approves sa
 }
 ```
 
-Source: [`packages/experimental/tool-harness2/src/index.ts`](../packages/experimental/tool-harness2/src/index.ts)
+Source: [`packages/subagent/tool-harness2/src/index.ts`](../packages/subagent/tool-harness2/src/index.ts)
 
-Explicit experimental composition only. Bounded recursive child runs compare candidate-scoped resources; a separate approval-gated tool adopts mode/domain guidance without changing parent policy or prompts.
+Included in full base-backed profiles and the Web/Desktop standard, cordis, and ptc presets. Bounded solver children use parent-authorized read-only task tools; the parent applies selected work, and a separate approval-gated tool adopts domain guidance.
 
 <a id="deepseek-aidsh-tool-ralph"></a>
 

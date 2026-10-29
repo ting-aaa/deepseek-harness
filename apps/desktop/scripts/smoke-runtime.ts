@@ -11,9 +11,10 @@ import { readPrimaryRuntime, workspaceDependencyPaths } from '../../../packages/
 import { DesktopHostProcess } from '../src/host-process.ts'
 import { createPluginProfile } from '../src/project-manager.ts'
 import type { DesktopRuntimeDescriptor } from '../src/runtime-tree.ts'
+import { smokeHarness2Runtime } from './smoke-harness2-runtime.ts'
 
 /**
- * Check CLI package operations, Host startup, its frontend, external plugins and real Office-to-PDF conversion.
+ * Check first-party Harness², CLI operations, Host startup, frontend, external plugins and Office conversion.
  * @param root - Materialized dsh resources.
  * @param node - Prepared target Electron executable.
  * @param runtime - Verified resource descriptor.
@@ -40,6 +41,7 @@ export async function smokeDesktopRuntime(
   let timer: ReturnType<typeof setTimeout> | undefined
   try {
     writeFileSync(join(home, 'npmrc'), '')
+    await smokeHarness2Runtime(root, node, hostEnvironment, home)
     createPluginProfile(profile)
     const pluginName = 'desktop-runtime-smoke-plugin'
     const plugin = join(home, pluginName)
@@ -88,10 +90,54 @@ import { Context } from '@deepseek-ai/cordis'
 import { inspect, promisify } from 'node:util'
 import { execFile } from 'node:child_process'
 import { readFile } from 'node:fs/promises'
+import { randomUUID } from 'node:crypto'
 export function apply(ctx) {
   if (!(ctx instanceof Context)) throw new Error('desktop runtime: external plugin loaded another Cordis instance')
+  if (ctx.get('harness2') === undefined) throw new Error('desktop runtime: default composition did not load the first-party Harness² engine')
+  const appReady = ctx.get('appReady')
+  if (appReady === undefined) throw new Error('desktop runtime: missing application readiness signal')
+  let harness2Probe
+  ctx.effect(() => {
+    const abort = new AbortController()
+    const stop = appReady.onReady(() => {
+      harness2Probe = (async () => {
+        const id = 'desktop-harness2-smoke-' + randomUUID()
+        let modelRequests = 0
+        const owned = await ctx.agents.create({ sessionId: id, meta: {cwd: ${JSON.stringify(home)}, agentPreset: 'standard'},
+          agentOptions: {}, signal: abort.signal,
+          async setup(agentCtx) {
+            await ctx.agentPresets.mount(agentCtx, 'standard')
+            agentCtx.on('agent/request', () => { modelRequests++; throw new Error('desktop runtime: the idle Harness² probe must not invoke a model') })
+          } })
+        let result
+        try {
+          result = {engine: ctx.get('harness2') !== undefined, preset: 'standard',
+            preview: ctx.tools.get('harness2', owned.agent) !== undefined,
+            remember: ctx.tools.get('harness2_remember', owned.agent) !== undefined}
+          if (!result.engine || !result.preview || !result.remember || owned.agent.status !== 'idle') {
+            throw new Error('desktop runtime: standard Agent preset did not expose the first-party Harness² engine and tools')
+          }
+        } finally { await owned.dispose() }
+        if (modelRequests !== 0 || ctx.agents.get(id) !== undefined) throw new Error('desktop runtime: Harness² probe did not remain idle or dispose completely')
+        return {...result, modelRequests, probeDisposed: true}
+      })()
+      void harness2Probe.catch(error => console.error('desktop runtime: Harness² preset probe failed', error))
+    })
+    return async () => {
+      stop()
+      abort.abort(new Error('desktop runtime: smoke plugin stopped'))
+      await harness2Probe?.catch(() => { /* The readiness route and diagnostic report probe failure. */ })
+    }
+  })
   ctx.effect(() => ctx.webServer.register({ kind: 'exact', path: '/desktop-smoke',
     handler(_request, response) { response.end('plugin route ready') } }))
+  ctx.effect(() => ctx.webServer.register({ kind: 'exact', path: '/desktop-smoke-harness2',
+    async handler(_request, response) {
+      try {
+        if (harness2Probe === undefined) throw new Error('desktop runtime: Harness² preset probe did not start at application readiness')
+        response.end(JSON.stringify(await harness2Probe))
+      } catch (error) { response.statusCode = 500; response.end(inspect(error, {depth: 5})) }
+    } }))
   ctx.effect(() => ctx.webServer.register({ kind: 'exact', path: '/desktop-smoke-install',
     async handler(_request, response) {
       try {
@@ -135,7 +181,7 @@ export function apply(ctx) {
   }
 }
 `)
-    writeFileSync(join(plugin, 'bundle.yml'), '- insert:\n    - id: desktop-runtime-smoke-plugin\n      name: desktop-runtime-smoke-plugin\n      inject: [webServer, officeToPdf, skills, pluginManager]\n')
+    writeFileSync(join(plugin, 'bundle.yml'), '- insert:\n    - id: desktop-runtime-smoke-plugin\n      name: desktop-runtime-smoke-plugin\n      inject: [webServer, officeToPdf, skills, pluginManager, harness2, tools, agents, agentPresets]\n')
     cpSync(plugin, join(profile, 'node_modules', pluginName), { recursive: true })
     const manifest = JSON.parse(readFileSync(join(profile, 'package.json'), 'utf8')) as {
       dependencies?: Record<string, string>
@@ -157,6 +203,24 @@ export function apply(ctx) {
     }
     const pluginResponse = await fetch(new URL('/desktop-smoke', ready.url), { headers: { cookie } })
     if (await pluginResponse.text() !== 'plugin route ready') throw new Error('desktop runtime: plugin HTTP route failed')
+    const harness2Response = await fetch(new URL('/desktop-smoke-harness2', ready.url), {
+      headers: { cookie }, signal: AbortSignal.timeout(120_000),
+    })
+    const harness2Body = await harness2Response.text()
+    if (!harness2Response.ok) throw new Error(`desktop runtime: default Harness² Agent preset probe failed: ${harness2Body}`)
+    const harness2 = JSON.parse(harness2Body) as {
+      engine?: boolean
+      preview?: boolean
+      remember?: boolean
+      preset?: string
+      modelRequests?: number
+      probeDisposed?: boolean
+    }
+    if (harness2.engine !== true || harness2.preview !== true || harness2.remember !== true
+      || harness2.preset !== 'standard' || harness2.modelRequests !== 0 || harness2.probeDisposed !== true) {
+      throw new Error('desktop runtime: default Harness² Host composition failed')
+    }
+    console.log('desktop runtime: default Harness² engine and model tools loaded without an enable step')
     const installation = await fetch(new URL('/desktop-smoke-install', ready.url), {
       headers: { cookie }, signal: AbortSignal.timeout(120_000),
     })

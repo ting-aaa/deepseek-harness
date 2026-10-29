@@ -143,7 +143,7 @@ seam 正是替换一个提供方就能改变整个产品的原因。文件系统
 
 [实验性 Agent Teams](subsystems/agent-team.zh.md) 通过显式启用的 `ctx.agentTeams`，在可继续 subagent 之上提供持久 roster、任务状态和直接 inbox 消息协作。
 
-显式启用的 [Harness²](subsystems/harness2.zh.md) 比较子会话文本指导，并持久保留已接受的经验。
+内置 [Harness²](subsystems/harness2.zh.md) 依据明确请求比较子会话指导，并持久保留显式接受的经验。
 
 ## 新行为的归属位置
 

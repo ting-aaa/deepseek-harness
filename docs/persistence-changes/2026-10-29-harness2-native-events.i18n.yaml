@@ -1,0 +1,28 @@
+# Bilingual-pair consistency record for 2026-10-29-harness2-native-events.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write docs/persistence-changes/2026-10-29-harness2-native-events.md
+/:
+  en: 3d5a424ae7d7e46b
+  zh: c22a8e4a62d8cc1a
+/2026-10-29-harness2-native-events:
+  en: e32ee0483c522e09
+  zh: 928df25bee3464cd
+/2026-10-29-harness2-native-events/summary:
+  en: 646d62e70ee81b20
+  zh: 834d1d4389b8dfbf
+/2026-10-29-harness2-native-events/table-of-contents:
+  en: 6cf314a069ceb451
+  zh: 9adff678e9ecab3b
+/2026-10-29-harness2-native-events/declaration:
+  en: 6907136f28e48c90
+  zh: 02f8298485f3d8e7
+/2026-10-29-harness2-native-events/compatibility:
+  en: 49a94f4de82b68d7
+  zh: 9af282cf792e795f
+/2026-10-29-harness2-native-events/verification:
+  en: fece1775b5855d27
+  zh: 096807cdf0d2b5fb
+/2026-10-29-harness2-native-events/dev-note:
+  en: b75c8458928b72b9
+  zh: 003ba4e17b4b5269

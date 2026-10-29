@@ -306,8 +306,7 @@
     "@deepseek-ai/dsh-experimental-forge-github": "workspace:*",
     "@deepseek-ai/dsh-experimental-forge-session": "workspace:*",
     "@deepseek-ai/dsh-action-cards": "workspace:*",
-    "@deepseek-ai/dsh-experimental-harness2": "workspace:*",
-    "@deepseek-ai/dsh-experimental-tool-harness2": "workspace:*",
-    "@deepseek-ai/dsh-experimental-harness2-bundle": "workspace:*"
+    "@deepseek-ai/dsh-harness2": "workspace:*",
+    "@deepseek-ai/dsh-tool-harness2": "workspace:*"
   }
 }
