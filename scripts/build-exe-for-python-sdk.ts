@@ -56,7 +56,7 @@ const ASSET_GLOBS = [
   'node_modules/**/package.json',
   'node_modules/**/*.json',
   // Plugin display metadata resolves these package-owned images at runtime.
-  'node_modules/@deepseek-ai/dsh-*/**/*.{svg,png,jpg,jpeg,webp}',
+  'node_modules/**/@deepseek-ai/dsh-*/**/*.{svg,png,jpg,jpeg,webp}',
   // Package-owned Markdown includes runtime skill instructions.
   'node_modules/**/*.md',
   'node_modules/**/*.dylib',
@@ -68,9 +68,9 @@ const ASSET_GLOBS = [
   'node_modules/**/*.yaml',
   'node_modules/**/*.yml',
   // web-app builds this path dynamically, so pkg cannot discover the static frontend.
-  'node_modules/@deepseek-ai/dsh-web-frontend/dist/**/*',
+  'node_modules/**/@deepseek-ai/dsh-web-frontend/dist/**/*',
   // The diagnosis provider extracts its PowerShell script for an external interpreter.
-  'node_modules/@deepseek-ai/dsh-sandbox-windows-acl/assets/**/*',
+  'node_modules/**/@deepseek-ai/dsh-sandbox-windows-acl/assets/**/*',
 ]
 
 const PLATFORMS = ['linux', 'macos', 'win'] as const

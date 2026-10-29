@@ -40,7 +40,10 @@ describe('candidate files', () => {
     const parent = await mkdtemp(join(tmpdir(), 'candidate-test-'))
     try {
       const materialized = await materializeCandidateTree(validateCandidateTree(base, limits), parent)
-      expect((await stat(materialized.directory)).mode & 0o777).toBe(0o700)
+      const directory = await stat(materialized.directory)
+      expect(directory.isDirectory()).toBe(true)
+      // Windows does not expose POSIX owner/group permission bits.
+      if (process.platform !== 'win32') expect(directory.mode & 0o777).toBe(0o700)
       expect(await readFile(join(materialized.directory, 'systemprompt.md'), 'utf8')).toBe(base['systemprompt.md'])
       await materialized.dispose()
       await expect(stat(materialized.directory)).rejects.toThrow()
