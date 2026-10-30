@@ -9,6 +9,8 @@ import { promisify } from 'node:util'
 import { fileURLToPath } from 'node:url'
 import { readPrimaryRuntime, workspaceDependencyPaths } from '../../../packages/skill/tool-workspace-dependencies/src/index.ts'
 import { DesktopHostProcess } from '../src/host-process.ts'
+import { desktopProfileBundles } from '../src/fork-profile.ts'
+import { resolveDesktopForkFlavor } from './desktop-fork-flavor.mjs'
 import { createPluginProfile } from '../src/project-manager.ts'
 import type { DesktopRuntimeDescriptor } from '../src/runtime-tree.ts'
 import { smokeHarness2Runtime } from './smoke-harness2-runtime.ts'
@@ -25,6 +27,7 @@ import { smokeHarness2Runtime } from './smoke-harness2-runtime.ts'
 export async function smokeDesktopRuntime(
   root: string, node: string, runtime: DesktopRuntimeDescriptor, environment: NodeJS.ProcessEnv, resourcesRuntime: string,
 ): Promise<void> {
+  const custom = resolveDesktopForkFlavor(environment) === 'harness2'
   const home = mkdtempSync(join(tmpdir(), 'dsh-desktop-smoke-'))
   const profile = join(home, 'profiles', 'desktop')
   const hostEnvironment = {
@@ -42,7 +45,7 @@ export async function smokeDesktopRuntime(
   try {
     writeFileSync(join(home, 'npmrc'), '')
     await smokeHarness2Runtime(root, node, hostEnvironment, home)
-    createPluginProfile(profile)
+    createPluginProfile(profile, desktopProfileBundles(custom))
     const pluginName = 'desktop-runtime-smoke-plugin'
     const plugin = join(home, pluginName)
     mkdirSync(plugin, { recursive: true })
@@ -101,6 +104,8 @@ export function apply(ctx) {
     const abort = new AbortController()
     const stop = appReady.onReady(() => {
       harness2Probe = (async () => {
+        const telemetryDisabled = ctx.get('productTelemetry') === undefined && ctx.get('productAnalytics') === undefined
+        if (${JSON.stringify(custom)} && !telemetryDisabled) throw new Error('desktop runtime: custom telemetry is active')
         const id = 'desktop-harness2-smoke-' + randomUUID()
         let modelRequests = 0
         const owned = await ctx.agents.create({ sessionId: id, meta: {cwd: ${JSON.stringify(home)}, agentPreset: 'standard'},
@@ -119,7 +124,7 @@ export function apply(ctx) {
           }
         } finally { await owned.dispose() }
         if (modelRequests !== 0 || ctx.agents.get(id) !== undefined) throw new Error('desktop runtime: Harness² probe did not remain idle or dispose completely')
-        return {...result, modelRequests, probeDisposed: true}
+        return {...result, modelRequests, probeDisposed: true, telemetryDisabled}
       })()
       void harness2Probe.catch(error => console.error('desktop runtime: Harness² preset probe failed', error))
     })
@@ -215,11 +220,13 @@ export function apply(ctx) {
       preset?: string
       modelRequests?: number
       probeDisposed?: boolean
+      telemetryDisabled?: boolean
     }
     if (harness2.engine !== true || harness2.preview !== true || harness2.remember !== true
       || harness2.preset !== 'standard' || harness2.modelRequests !== 0 || harness2.probeDisposed !== true) {
       throw new Error('desktop runtime: default Harness² Host composition failed')
     }
+    if (custom && harness2.telemetryDisabled !== true) throw new Error('desktop runtime: custom telemetry did not remain disabled')
     console.log('desktop runtime: default Harness² engine and model tools loaded without an enable step')
     const installation = await fetch(new URL('/desktop-smoke-install', ready.url), {
       headers: { cookie }, signal: AbortSignal.timeout(120_000),

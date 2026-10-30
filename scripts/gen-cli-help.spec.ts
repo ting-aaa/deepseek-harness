@@ -1,7 +1,8 @@
 /** Command discovery and complete output preservation for the CLI reference. */
 
 import { describe, expect, it } from 'vitest'
-import { collectCliHelp, parseCliHelp, prefetchHelp, topLevelHelpArgs } from './gen-cli-help.ts'
+import { cliHelpConcurrency, collectCliHelp, parseCliHelp, prefetchHelp, topLevelHelpArgs } from './gen-cli-help.ts'
+import { defaultParallelism } from './parallelism.ts'
 
 interface PendingRead {
   args: string
@@ -84,6 +85,27 @@ describe('CLI help discovery', () => {
 })
 
 describe('CLI help prefetch', () => {
+  it('uses the repository default when no explicit worker budget is supplied', () => {
+    for (const environment of [{}, { CI: 'true' }]) {
+      expect(cliHelpConcurrency(environment)).toBe(defaultParallelism(environment))
+    }
+  })
+
+  it('honors the help override before the aggregate budget, including in CI', () => {
+    expect(cliHelpConcurrency({ DSH_GATE_CONCURRENCY: '2' })).toBe(2)
+    expect(cliHelpConcurrency({ CI: 'true', DSH_GATE_CONCURRENCY: '1' })).toBe(1)
+    expect(cliHelpConcurrency({ DSH_CLI_HELP_CONCURRENCY: '3', DSH_GATE_CONCURRENCY: '2' })).toBe(3)
+    expect(cliHelpConcurrency({ CI: 'true', DSH_CLI_HELP_CONCURRENCY: '1', DSH_GATE_CONCURRENCY: 'invalid' })).toBe(1)
+  })
+
+  it.each(['0', '-1', '1.5', '01', '', '2workers', '9007199254740992'])(
+    'rejects invalid explicit help and aggregate budgets %j', (raw) => {
+      expect(() => cliHelpConcurrency({ DSH_CLI_HELP_CONCURRENCY: raw, DSH_GATE_CONCURRENCY: '2' }))
+        .toThrow('DSH_CLI_HELP_CONCURRENCY must be a positive integer')
+      expect(() => cliHelpConcurrency({ DSH_GATE_CONCURRENCY: raw })).toThrow('DSH_GATE_CONCURRENCY must be a positive integer')
+    },
+  )
+
   it('starts prefetched reads within the limit and serves them in request order', async () => {
     const { reads, read } = controlledReads()
     const reader = prefetchHelp(read, [['a'], ['b'], ['c']], 2)

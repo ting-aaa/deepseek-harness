@@ -1647,7 +1647,7 @@ export interface Config {
   /** Portable WASI execution by default; explicit Linux namespace configuration remains supported. Null disables executable candidates. */
   runtime?: WasiRuntimeConfig | IsolatedRuntimeConfig | null
   /** Read-only DSH task tools borrowed from the initiating parent; never shell, writes, or application. */
-  readTools?: readonly ReadOnlyTaskTool[]
+  readTools?: ReadOnlyTaskTool[]
   /** Retained full-tree experiences per domain. */
   maxLibraryEntries?: number
   /** Maximum concurrent top-level children; delegated leaf children do not hold this semaphore. */

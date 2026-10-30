@@ -72,6 +72,40 @@ describe('unique object-name prefix search', () => {
 })
 
 describe('maintained repository reference policy', () => {
+  it('accepts unquoted decimal uv wheel sizes that collide with a commit prefix', () => {
+    const size = String(6_344_383)
+    const wheel = `{ url = "https://files.example.invalid/package.whl", hash = "sha256:${'a'.repeat(64)}", size = ${size}, upload-time = "2026-07-01T00:00:00Z" },`
+    for (const file of ['uv.lock', 'python/sdk/uv.lock']) {
+      expect(findRepositoryReferences(file, wheel, new Set([size]))).toEqual([])
+    }
+    expect(findRepositoryReferences('other.lock', wheel, new Set([size])))
+      .toEqual([{ file: 'other.lock', line: 1, kind: 'commit-hash' }])
+  })
+
+  it('still rejects quoted wheel sizes, hashes and other commit references in uv locks', () => {
+    const commit = String(6_344_383)
+    const file = 'python/sdk/uv.lock'
+    const artifact = `{ url = "https://files.example.invalid/package.whl", hash = "sha256:${'a'.repeat(64)}", size = ${commit} }`
+    for (const source of [
+      artifact.replace(`size = ${commit}`, `size = "${commit}"`),
+      artifact.replace(`sha256:${'a'.repeat(64)}`, commit),
+      `${artifact} # commit ${commit}`,
+      `${artifact}\nref = "${commit}"`,
+      `size = "${commit}"`,
+      commit,
+    ]) {
+      expect(findRepositoryReferences(file, source, new Set([commit])))
+        .toEqual([{ file, line: source.includes('\n') ? 2 : 1, kind: 'commit-hash' }])
+    }
+  })
+
+  it('keeps organization URL checks on wheel metadata with an accepted decimal size', () => {
+    const size = String(6_344_383)
+    const wheel = `{ url = "${organizationUrl}/package.whl", hash = "sha256:${'a'.repeat(64)}", size = ${size} }`
+    expect(findRepositoryReferences('uv.lock', wheel, new Set([size])))
+      .toEqual([{ file: 'uv.lock', line: 1, kind: 'organization-url' }])
+  })
+
   it('permits only the independent kit repository and its source URLs', () => {
     for (const suffix of ['', '.git', '/tree/main/packages/entry']) {
       expect(findRepositoryReferences('package.json', `${organizationUrl}/libreoffice-kit${suffix}`, new Set())).toEqual([])

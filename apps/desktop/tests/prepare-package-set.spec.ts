@@ -37,9 +37,13 @@ describe('desktop package-set selection', () => {
         dependencies: { '@deepseek-ai/dsh': '^1.0.0' },
       })],
       ['@deepseek-ai/dsh-base', packed('@deepseek-ai/dsh-base', {
+        dependencies: { '@deepseek-ai/dsh-harness2': '^1.0.0', '@deepseek-ai/dsh-tool-harness2': '^1.0.0' },
         peerDependencies: { '@deepseek-ai/cordis': '^1.0.0' },
       })],
+      ['@deepseek-ai/dsh-harness2', packed('@deepseek-ai/dsh-harness2')],
+      ['@deepseek-ai/dsh-tool-harness2', packed('@deepseek-ai/dsh-tool-harness2')],
       ['@deepseek-ai/cordis', packed('@deepseek-ai/cordis')],
+      ['@deepseek-ai/dsh-experimental-harness2-bundle', packed('@deepseek-ai/dsh-experimental-harness2-bundle')],
       ['@deepseek-ai/platform-package', packed('@deepseek-ai/platform-package')],
       ['@deepseek-ai/unused', packed('@deepseek-ai/unused')],
     ])
@@ -48,12 +52,15 @@ describe('desktop package-set selection', () => {
       '@deepseek-ai/dsh',
       '@deepseek-ai/dsh-base',
       '@deepseek-ai/dsh-desktop-host',
+      '@deepseek-ai/dsh-harness2',
+      '@deepseek-ai/dsh-tool-harness2',
       '@deepseek-ai/platform-package',
     ])
   })
 
   it.each([
-    '@deepseek-ai/dsh-base', '@deepseek-ai/cordis', '@deepseek-ai/node-addon-system',
+    '@deepseek-ai/dsh-base', '@deepseek-ai/dsh-harness2', '@deepseek-ai/dsh-tool-harness2',
+    '@deepseek-ai/cordis', '@deepseek-ai/node-addon-system',
   ])('rejects required prepared package %s absent from the packed release inputs', (dependency) => {
     const available = new Map<string, PackedDesktopPackage>([
       ['@deepseek-ai/dsh', packed('@deepseek-ai/dsh', {
@@ -84,10 +91,11 @@ describe('desktop package-set selection', () => {
     ])
   })
 
-  it('requires both Desktop Host and public CLI entries', () => {
+  it('requires Desktop Host, public CLI, and custom policy entries', () => {
     const files = [
       'package/lib/index.js',
       'package/lib/cli.js',
+      'package/config/harness2.patch.yml',
     ]
     expect(() => {
       assertDesktopHostPackageFiles(files)
@@ -96,6 +104,7 @@ describe('desktop package-set selection', () => {
       assertDesktopHostPackageFiles(files.slice(1))
     }).toThrow(/lib\/index\.js/u)
     expect(() => { assertDesktopHostPackageFiles(files.slice(0, 1)) }).toThrow(/lib\/cli\.js/u)
+    expect(() => { assertDesktopHostPackageFiles(files.slice(0, 2)) }).toThrow(/config\/harness2\.patch\.yml/u)
   })
 })
 

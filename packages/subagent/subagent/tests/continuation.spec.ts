@@ -277,8 +277,8 @@ describe('one-shot local activations', () => {
     try {
       const started = await ctx.subagents.startActivation({ ...startSpec(parent), delivery: 'parent', oneShot: true })
       await expect(started.result).resolves.toMatchObject({ stopReason: 'completed', output: message(final) })
-      expect(inserted).toContainEqual({ kind: 'agent-message', text: expect.stringContaining(progress) })
-      expect(inserted).toContainEqual({ kind: 'subagent-settled', text: expect.stringContaining(final) })
+      expect(inserted.find(item => item.kind === 'agent-message')?.text).toContain(progress)
+      expect(inserted.find(item => item.kind === 'subagent-settled')?.text).toContain(final)
       expect(inserted.find(item => item.kind === 'subagent-settled')!.text).not.toContain('its closing message is omitted')
       expect(ctx.agents.get(started.childId)).toBeUndefined()
       await expect(ctx.subagents.sendMessage(parent, started.childId, message('continue'), { signal: testSignal }))

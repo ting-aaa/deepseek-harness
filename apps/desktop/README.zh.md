@@ -21,6 +21,7 @@ Desktop 在原生应用中运行 Harness 工作区。本参考文档说明应用
 - [故障恢复与诊断](docs/diagnostics/README.zh.md)
 - [开发](#develop)
 - [打包](#package)
+  - [Harness² 自定义 Windows 包](#harness2-custom-package)
 - [Windows 安装界面](#windows-installer-interface)
 - [更新](#updates)
 - [底层开发覆盖项](#low-level-development-overrides)
@@ -243,6 +244,32 @@ Desktop 在 Host 启动后、打开工作区前检查模型 API Key 引用是否
 - [Desktop 打包](packaging/README.zh.md)：本地与 Actions 构建、版本、部署配置、产物、日志和验收。
 - [Windows 签名与 runner 运维](windows-signing/README.zh.md)：机器部署、已接受的隔离风险、签名凭据、Token 失败与缓存维护。
 - [Desktop 发布](publishing/README.zh.md)：上传凭据、发布标识、固定下载、更新清单和上传恢复。
+
+<a id="harness2-custom-package"></a>
+
+### Harness² 自定义 Windows 包
+
+`Harness2 Desktop Custom` 是通过 `DSH_DESKTOP_FORK_FLAVOR=harness2` 显式选择的未签名 Windows x64 分发版本。它不是 DeepSeek 官方安装器，也不是官方应用的更新。打包的依赖闭包包含与完整 Desktop 和 Web 配置组合相同的内置 Harness² 引擎和工具。首次创建及恢复配置组合时使用共享 Web 配置组合的组合包，不覆盖已有自定义配置。模型使用仍需网络访问及配置凭据；打包应用并不提供离线 AI。
+
+| 设置 | 自定义分发版本 |
+|---|---|
+| 应用 ID | `local.harness2.desktop` |
+| Harness 数据 | `DSH_HARNESS2_HOME`，否则使用 `~/.harness2-desktop`；忽略继承的官方 `DSH_HOME`。 |
+| Electron 数据 | `%APPDATA%/Harness2 Desktop Custom`，与官方应用分离。 |
+| 官方集成 | 不使用官方更新器／更新策略，不注册 `dsh://`，不显示 **Manage dsh command** 菜单；禁用产品遥测。 |
+| 生成代码执行 | Windows 上的内置可移植 WASI 运行时；每次执行 Python 辅助程序或 TypeScript 中间件均需审批。无需 WSL 或 Linux 运行时。 |
+
+在准备就绪的 Windows x64 宿主上构建，前置条件见[打包指南](packaging/README.zh.md)。检查或打包前，先在 PowerShell 中选择自定义版本：
+
+```powershell
+$env:DSH_DESKTOP_FORK_FLAVOR = 'harness2'
+pnpm run package:desktop:win:x64:unsigned --check
+pnpm run package:desktop:win:x64:unsigned
+```
+
+此版本仅接受未签名 Windows x64，不读取发布配置文件或使用签名、发布、更新器设置。使用检出版本号或显式固定的 `--build-version`；`--build-version auto` 会被拒绝。原生构建成功后生成 `apps/desktop/.desktop-build/targets/win-x64/unsigned-artifacts/harness2-desktop-<version>-win-x64-unsigned.exe`。以上为手动构建说明；发布源码或源码测试通过，并不证明安装器已经构建或成功安装，也不代表签名或官方发布。
+
+安装并配置模型后，按 [Harness² 预览指南](../../docs/user/guide/harness2.zh.md)操作。保持自定义数据目录独立，不要将 `DSH_HARNESS2_HOME` 指向官方安装的数据。
 
 <a id="windows-uninstall-rules"></a>
 

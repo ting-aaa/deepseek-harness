@@ -29,6 +29,8 @@ Start with a working DSH model configuration in a full Desktop, Web, headless, S
 
 The agent may choose a bounded preview for complex or uncertain tasks when comparing approaches is useful. You can also request one directly; generated execution and remembering keep their separate approvals.
 
+For the separately packaged Windows application, see [Harness² custom Desktop](../../../apps/desktop/README.md#harness2-custom-package). It uses isolated application data and the same built-in Harness² feature, including portable WASI execution without WSL; online model configuration is still required.
+
 Include the problem, constraints, and source material or accessible input paths in the task text. Children receive no parent conversation, so “use the document above” is insufficient. Answer rollouts can use only the configured read-only tools available within the initiating parent’s task scope; if the needed tool or input is unavailable, include the material directly. The default allowlist is `read`, `read_image`, `glob`, `grep`, `web_search`, and `web_fetch`; deployment configuration can narrow it or disable it with `readTools: []`. Choose a domain label for a reusable task family. Matching mode and domain labels share lessons across conversations using this storage instance; they are not a privacy or authorization boundary. Do not include secrets in task text.
 
 -----
