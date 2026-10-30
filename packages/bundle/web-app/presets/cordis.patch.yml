@@ -41,6 +41,8 @@
             name: '@deepseek-ai/dsh-command-goal'
           - id: tool-goal
             name: '@deepseek-ai/dsh-tool-goal'
+          - id: optional-tool-harness2
+            name: '@deepseek-ai/dsh-tool-harness2'
           - id: planning
             name: cordis:group
             group: true

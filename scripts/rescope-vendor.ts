@@ -117,6 +117,14 @@ const GENERIC_SKIPS: readonly GenericSkip[] = [
   { file: 'docs/upgrade-guide/v0.2.1-alpha.1/subagent-preset-composition/guide.zh.md', upstream: ['cordis'] },
   { file: 'docs/user/guide/schedule.md', upstream: ['cordis'] },
   { file: 'docs/user/guide/schedule.zh.md', upstream: ['cordis'] },
+  { file: 'apps/desktop/tests/fork-profile.spec.ts', upstream: ['cordis'] },
+  { file: 'packages/subagent/harness2/tests/bundle.spec.ts', upstream: ['cordis'] },
+  { file: 'docs/subsystems/harness2.md', upstream: ['cordis'] },
+  { file: 'docs/subsystems/harness2.zh.md', upstream: ['cordis'] },
+  { file: 'docs/upgrade-guide/v0.2.2-alpha.2/harness2-built-in/guide.md', upstream: ['cordis'] },
+  { file: 'docs/upgrade-guide/v0.2.2-alpha.2/harness2-built-in/guide.zh.md', upstream: ['cordis'] },
+  { file: 'docs/user/guide/harness2.md', upstream: ['cordis'] },
+  { file: 'docs/user/guide/harness2.zh.md', upstream: ['cordis'] },
   { file: 'packages/bundle/web-app/cordis.patch.yml', upstream: ['cordis'] },
   { file: 'packages/client/ui-agent-preset/src/client/CreatePluginMenuItem.tsx', upstream: ['cordis'] },
   { file: 'packages/client/ui-agent-preset/src/client/analytics.ts', upstream: ['cordis'] },
@@ -667,7 +675,9 @@ function main(): void {
   const mode = args.includes('--apply') ? 'apply' : args.includes('--check') ? 'check' : 'dry'
   const reverse = args.includes('--reverse')
   const all = patterns(reverse)
-  const files = execFileSync('git', ['ls-files', '-z'], { cwd: root, encoding: 'utf8' })
+  const files = execFileSync('git', ['ls-files', '-z'], {
+    cwd: root, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024,
+  })
     .split('\0')
     .filter(file => file !== '' && !isRescopeExcluded(file))
 

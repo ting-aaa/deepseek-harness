@@ -32,7 +32,8 @@ async function main(): Promise<void> {
     environment: loadLayeredEnv('dsh'),
     profile: 'desktop',
     resolvedProfile: { profile, installAnchor },
-    patchFiles: [],
+    patchFiles: process.env.DSH_DESKTOP_FORK_FLAVOR === 'harness2'
+      ? [join(import.meta.dirname, '../config/harness2.patch.yml')] : [],
     args: ['--no-open', '--host', '127.0.0.1', '--port', '0'],
     ...(process.argv[5] === undefined ? {} : {
       packageManager: {

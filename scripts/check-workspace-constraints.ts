@@ -80,7 +80,7 @@ const localArtifactDirs = new Set(['node_modules'])
 const appPackageFiles: Readonly<Record<string, readonly string[]>> = {
   '@deepseek-ai/dsh': ['lib/*.js', 'lib/types/*.d.ts'],
   '@deepseek-ai/dsh-desktop-host': [
-    'lib/index.js', 'lib/cli.js',
+    'lib/index.js', 'lib/cli.js', 'config/harness2.patch.yml',
   ],
   // Sourcemaps stay out by payload policy; the worker-preview surface
   // (dist/preview.html and dist/preview/) backs opt-in experimental
@@ -311,9 +311,13 @@ export function detailDocumentFiles(packageDir: string): readonly string[] {
  * detail documents, and the built package-asset directory when `exports["./assets/*"]` targets it.
  * @param manifest - workspace package manifest.
  * @param detailFiles - entries from {@link detailDocumentFiles}.
- * @returns the icon, deduplicated locale targets, and detail documents followed by runtime, package-asset, and declaration payloads.
+ * @returns Canonical runtime, resource, declaration, and attribution publication entries for the owning package.
  */
 export function expectedDshPackageFiles(manifest: PackageManifest, detailFiles: readonly string[] = []): readonly string[] {
+  // Harness² owns a private WASI worker, shared runtime chunks, and pinned interpreters outside public exports.
+  if (manifest.name === '@deepseek-ai/dsh-harness2') {
+    return ['locale/*.json', 'assets/**/*', 'lib/*.js', 'lib/types/**/*.d.ts', 'NOTICE']
+  }
   const localeFiles = new Set<string>()
   for (const resource of Object.keys(manifest.exports ?? {})) {
     if (!/^\.\/(?:.+\/)?locale\/[^/]+\.json$/u.test(resource)) continue

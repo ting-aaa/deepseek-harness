@@ -15,6 +15,9 @@ import { tmpdir } from 'node:os'
 import { basename, delimiter, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
+import { Context } from '@deepseek-ai/cordis'
+import LlmRuntime from '@deepseek-ai/dsh-llm'
+import * as SdkReplayReady from './replay-ready.ts'
 import {
   assertPersistedSessionVersion,
   assertSessionFixtureVersion,
@@ -387,12 +390,17 @@ async function fixtureFiles(scenario: CorpusScenario): Promise<string[]> {
   }))
 }
 
+/** Substitute inside JSON string content without changing ordinary text/file templating. */
+function hydrateJsonlFixtureCwd(fixture: string, cwd: string): string {
+  return fixture.replaceAll('{{cwd}}', JSON.stringify(cwd).slice(1, -1))
+}
+
 async function hydrateReplayFixtures(scenario: CorpusScenario, cwd: string): Promise<string[]> {
   const root = join(cwd, '.replay-fixtures')
   await mkdir(root, { recursive: true })
   return Promise.all((await fixtureFiles(scenario)).map(async (source) => {
     const destination = join(root, basename(source))
-    await writeFile(destination, (await readFile(source, 'utf8')).replaceAll('{{cwd}}', cwd))
+    await writeFile(destination, hydrateJsonlFixtureCwd(await readFile(source, 'utf8'), cwd))
     return destination
   }))
 }
@@ -966,6 +974,50 @@ async function verifyHeaders(
 }
 
 describe('TypeScript SDK snapshots over the jsonrpc runtime', () => {
+  it('hydrates recorded JSONL with Windows backslashes and quotes', async () => {
+    const source = await readFile(join(corpusRoot, 'sdk/text-turn/session.v4.jsonl'), 'utf8')
+    const cwd = 'C:\\workspace\\a "quoted" project\\测试'
+    const hydrated = records(hydrateJsonlFixtureCwd(source, cwd))
+    expect(hydrated[0]).toMatchObject({ cwd })
+    expect(hydrated).toHaveLength(records(source).length)
+    expect(hydrated.find(row => row.type === 'assistant/message'))
+      .toEqual(records(source).find(row => row.type === 'assistant/message'))
+  })
+
+  it('publishes SDK replay readiness only after installation and removes it on disposal', async () => {
+    const ctx = new Context()
+    await ctx.plugin(LlmRuntime)
+    try {
+      const replay = await ctx.plugin(SdkReplayReady, {
+        file: join(corpusRoot, 'sdk/text-turn/session.v4.jsonl'),
+        providers: [{ id: 'deepseek-official', name: 'DeepSeek', models: [{ id: 'deepseek-v4-flash' }] }],
+      })
+      expect(ctx.get('sdkSnapshotReplayReady')).toBe(true)
+      expect(ctx.llm.listProviders().map(provider => provider.id)).toContain('deepseek-official')
+      await replay.dispose()
+      expect(ctx.get('sdkSnapshotReplayReady')).toBeUndefined()
+      expect(ctx.llm.listProviders().map(provider => provider.id)).not.toContain('deepseek-official')
+    } finally { await ctx.fiber.dispose() }
+  })
+
+  it('does not publish SDK readiness for a malformed replay fixture', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'sdk-malformed-replay-'))
+    const file = join(root, 'session.jsonl')
+    const ctx = new Context()
+    await ctx.plugin(LlmRuntime)
+    try {
+      await writeFile(file, '{"type":"session","cwd":"C:\\invalid"}\n')
+      expect(() => SdkReplayReady.apply(ctx, { file })).toThrow('requires an explicit provider catalog')
+      expect(() => SdkReplayReady.apply(ctx, {
+        file, providers: [{ id: 'deepseek-official', models: [{ id: 'deepseek-v4-flash' }] }],
+      })).toThrow('contains invalid JSON')
+      expect(ctx.get('sdkSnapshotReplayReady')).toBeUndefined()
+    } finally {
+      await ctx.fiber.dispose()
+      await rm(root, { recursive: true, force: true })
+    }
+  })
+
   it('restores the retained V3 max-tokens recording after an interrupted next-turn restart', async () => {
     const path = join(corpusRoot, 'sdk/max-tokens-continue/session.v3.jsonl')
     const fixture = await readFile(path, 'utf8')

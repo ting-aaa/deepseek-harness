@@ -369,6 +369,18 @@
       config:
         providerName: fork
 
+    - id: optional-harness2
+      name: '@deepseek-ai/dsh-harness2'
+      config:
+        provider: spawn
+        maxConcurrentRuns: 1
+        childTimeoutMs: 120000
+        maxStepsPerChild: 4
+        maxTokensPerChild: 4096
+
+    - id: optional-tool-harness2
+      name: '@deepseek-ai/dsh-tool-harness2'
+
     # Continuable background children are selected per delegation tool. The
     # separately loaded follow-up tool registers the one global `send_message`.
     - id: tool-subagent-control

@@ -530,6 +530,52 @@ it('publishes CLI runtime declarations and rejects a payload that omits them', (
     .toEqual([expect.stringContaining('@deepseek-ai/dsh: package.json files must be ["lib/*.js","lib/types/*.d.ts"]')])
 })
 
+it('requires Harness² portable runtime assets, worker bundles, declarations and attribution', () => {
+  const dir = 'packages/subagent/harness2'
+  const manifest = JSON.parse(readFileSync(new URL(`../${dir}/package.json`, import.meta.url), 'utf8')) as WorkspaceManifest['manifest']
+  const files = ['locale/*.json', 'assets/**/*', 'lib/*.js', 'lib/types/**/*.d.ts', 'NOTICE']
+  expect(expectedDshPackageFiles(manifest)).toEqual(files)
+  expect(checkWorkspaceManifest({ dir, manifest })).toEqual([])
+  for (const omitted of files) {
+    expect(checkWorkspaceManifest({ dir, manifest: { ...manifest, files: files.filter(file => file !== omitted) } }))
+      .toEqual([expect.stringContaining('package.json files must be')])
+  }
+  for (const invalidFiles of [
+    files.map(file => file === 'lib/*.js' ? 'lib/index.js' : file),
+    [...files, 'config/unrelated.yml'],
+  ]) {
+    expect(checkWorkspaceManifest({ dir, manifest: { ...manifest, files: invalidFiles } }))
+      .toEqual([expect.stringContaining('package.json files must be')])
+  }
+  expect(expectedDshPackageFiles({ ...manifest, name: '@deepseek-ai/dsh-other-worker' }))
+    .toEqual(['locale/*.json', 'lib/index.js', 'lib/types/**/*.d.ts'])
+})
+
+it('requires Harness² tool locale resources through the ordinary publication policy', () => {
+  const dir = 'packages/subagent/tool-harness2'
+  const manifest = JSON.parse(readFileSync(new URL(`../${dir}/package.json`, import.meta.url), 'utf8')) as WorkspaceManifest['manifest']
+  const files = ['locale/*.json', 'lib/index.js', 'lib/types/**/*.d.ts']
+  expect(expectedDshPackageFiles(manifest)).toEqual(files)
+  expect(checkWorkspaceManifest({ dir, manifest })).toEqual([])
+  expect(checkWorkspaceManifest({ dir, manifest: { ...manifest, files: files.filter(file => file !== 'locale/*.json') } }))
+    .toEqual([expect.stringContaining('package.json files must be')])
+})
+
+it('requires the custom Desktop Host overlay while rejecting unrelated configuration files', () => {
+  const dir = 'apps/desktop-host'
+  const manifest = JSON.parse(readFileSync(new URL(`../${dir}/package.json`, import.meta.url), 'utf8')) as WorkspaceManifest['manifest']
+  const files = ['lib/index.js', 'lib/cli.js', 'config/harness2.patch.yml']
+  expect(manifest.files).toEqual(files)
+  expect(checkWorkspaceManifest({ dir, manifest })).toEqual([])
+  for (const invalidFiles of [
+    files.filter(file => file !== 'config/harness2.patch.yml'),
+    [...files, 'config/unrelated.patch.yml'],
+  ]) {
+    expect(checkWorkspaceManifest({ dir, manifest: { ...manifest, files: invalidFiles } }))
+      .toEqual([expect.stringContaining('package.json files must be')])
+  }
+})
+
 it('requires the shared Web injection entry in the published payload', () => {
   const manifest = JSON.parse(readFileSync(new URL('../packages/client/web/package.json', import.meta.url), 'utf8')) as WorkspaceManifest['manifest']
   expect(checkWorkspaceManifest({ dir: 'packages/client/web', manifest })).toEqual([])

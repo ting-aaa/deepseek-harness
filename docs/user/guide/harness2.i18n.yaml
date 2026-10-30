@@ -1,0 +1,37 @@
+# Bilingual-pair consistency record for harness2.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write docs/user/guide/harness2.md
+/:
+  en: ec106829cbd89411
+  zh: 73b9487911e6dddd
+/preview-harness-refinement:
+  en: 42afd0ae0e2cc9ef
+  zh: 23231f031dca9e1e
+/preview-harness-refinement/summary:
+  en: eb17d39a9b8498c7
+  zh: 526d870f1c5ff02f
+/preview-harness-refinement/table-of-contents:
+  en: 547abd49eaf804fa
+  zh: 2776e1e3f46d25ab
+/preview-harness-refinement/1-prepare-the-task-inputs:
+  en: 2618784c61633bfd
+  zh: c69e8205a5ec107d
+/preview-harness-refinement/2-request-a-preview:
+  en: 6f289e72ff3098ad
+  zh: e7b978119d76973e
+/preview-harness-refinement/3-review-before-remembering:
+  en: e1d1fdfec2ff6890
+  zh: a53dc7cf17130ea4
+/preview-harness-refinement/4-reuse-a-domain-lesson:
+  en: e10922aa3eee3024
+  zh: 80516faa7ac6e1f4
+/preview-harness-refinement/troubleshooting:
+  en: a7a034eb841c4a52
+  zh: 311a318580ab5a20
+/preview-harness-refinement/further-exploration:
+  en: e83db1a5d8692dae
+  zh: 80737653320a902f
+/preview-harness-refinement/dev-note:
+  en: 5de1d6304e00c58f
+  zh: e58fc8dda0bea8d5

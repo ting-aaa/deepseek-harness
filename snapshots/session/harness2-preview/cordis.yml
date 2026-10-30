@@ -1,0 +1,14 @@
+# This text-only scenario does not exercise either platform shell consumer.
+- id: tool-bash
+  disabled: true
+- id: tool-pwsh
+  disabled: true
+
+# Serialize independent children so recorded roles remain stable.
+- id: optional-harness2
+  config:
+    provider: spawn
+    maxConcurrentChildren: 1
+    childTimeoutMs: 30000
+    maxStepsPerChild: 4
+    maxTokensPerChild: 4096

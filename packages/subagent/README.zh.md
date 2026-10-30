@@ -33,6 +33,8 @@ subagent 包家族让 agent（智能体）将任务委派给子 agent、继续�
 | [`subagent-dsh-sdk/`](subagent-dsh-sdk/README.zh.md) | 经 TypeScript SDK 运行进程外 Harness 子 agent | 注册到 `ctx.subagents` |
 | [`tool-subagent/`](tool-subagent/README.zh.md) | 向模型公开委派 | 注册到 `ctx.tools` |
 | [`tool-subagent-control/`](tool-subagent-control/README.zh.md) | 向模型提供向相邻 agent 发送消息、中断工作和列出子级状态的操作 | 注册到 `ctx.tools` |
+| [`harness2/`](harness2/README.zh.md) | 比较有界候选 harness，并保留显式接受的领域经验 | `ctx.harness2` |
+| [`tool-harness2/`](tool-harness2/README.zh.md) | 提供 Harness² 预览与显式经验采纳 | 注册到 `ctx.tools` |
 
 -----
 
@@ -40,6 +42,7 @@ subagent 包家族让 agent（智能体）将任务委派给子 agent、继续�
 ## 相关文档
 
 - [Subagent 子系统](../../docs/subsystems/subagent.zh.md)——服务约定、提供方约定与终态结果语义。
+- [Harness² 子系统](../../docs/subsystems/harness2.zh.md)——优化运行、子会话执行与经验归属。
 - [历史Subagent 能力 seam](../../.agents/notes/archived/feature/2026-06-21-subagent-capability-seam.md)——委派能力家族的设计记录。
 - [可继续的 subagent](../../.agents/notes/implemented/feature/2026-07-28-continuable-subagent-conversations.zh.md)——接受后续轮次的持久子级。
 - [tool-subagent-control README](tool-subagent-control/README.zh.md)——后续消息、中断与列举接口。

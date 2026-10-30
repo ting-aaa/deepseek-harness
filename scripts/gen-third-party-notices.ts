@@ -801,6 +801,12 @@ The Cordis framework and its foundation libraries are source-vendored into this 
 | --- | --- | --- | --- |
 ${vendored.map(row => `| \`${row.npmName}\` | \`${row.upstreamName}\` | [${row.sourceDirectory}](${row.sourceDirectory}/) | MIT |`).join('\n')}
 
+## Harness² native adaptation
+
+The built-in [Harness² package](packages/subagent/harness2/README.md) includes modified TypeScript adaptations of [google-research/harness2](https://github.com/google-research/harness2), Copyright 2026 Google LLC, licensed under Apache-2.0. The package [NOTICE](packages/subagent/harness2/NOTICE) records the exact upstream source revision and modifications; its [LICENSE](packages/subagent/harness2/LICENSE) preserves the Apache-2.0 text and distinguishes original MIT-licensed DSH contributions. No upstream Python CLI or benchmark runner is bundled.
+
+The package also carries the pinned CPython 3.13.11 WASI distribution described by [runtime-assets.ts](packages/subagent/harness2/src/runtime-assets.ts). Its [Python license text](packages/subagent/harness2/assets/PYTHON-LICENSE.txt) is shipped beside the interpreter archive. This is the portable interpreter for approved candidate helpers; it does not include the upstream Harness² runner.
+
 ## Runtime npm dependencies
 
 External packages installed for runtime use or embedded in distributed Host or browser artifacts. Browser inputs are resolved through the shipping tsdown and Vite configurations, independently of npm dependency sections. Host embedding declarations identify the distributing package and its embedded dependencies. The tier covers every plugin a user can mount from \`cordis.yml\` — not only what the \`dsh\` CLI, Web UI, and Python SDK runtime load by default.

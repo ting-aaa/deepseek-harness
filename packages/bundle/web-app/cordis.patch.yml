@@ -564,6 +564,9 @@
 - id: tool-subagent-fork
   disabled: true
 
+- id: optional-tool-harness2
+  disabled: true
+
 - id: workflow-ptc
   disabled: true
 

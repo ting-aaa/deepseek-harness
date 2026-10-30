@@ -55,13 +55,16 @@ it('receives live expiry separately from account snapshots', async () => {
   if (typeof address === 'string' || address === null) throw new Error('missing server address')
   const connected = once(server, 'connection')
   const expired = vi.fn()
+  const failed = vi.fn()
+  const snapshots = vi.fn()
   const onAnalyticsEnabledChanged = vi.fn()
   const snapshot = { status: 'signed-out', attempt: null,
     links: { usageUrl: 'https://platform.deepseek.com/usage', topUpUrl: 'https://platform.deepseek.com/top_up' } }
   const received = Promise.withResolvers<undefined>()
   const backend = desktopAccountBackend(`http://127.0.0.1:${address.port}`, () => Promise.resolve(snapshot), () => Promise.resolve(''))
   const stop = backend.watch(
-    (value) => { expect(value).toEqual(snapshot); received.resolve(undefined) }, vi.fn(), expired, onAnalyticsEnabledChanged,
+    (value) => { expect(value).toEqual(snapshot); snapshots(value); received.resolve(undefined) },
+    failed, expired, onAnalyticsEnabledChanged,
   )
   onTestFinished(stop)
   await connected
@@ -87,6 +90,14 @@ it('receives live expiry separately from account snapshots', async () => {
   socket.send(JSON.stringify({ type: 'item', streamId: streams.get('productAnalytics/watchPolicy'), value: 'invalid policy' }))
   await vi.waitFor(() => { expect(onAnalyticsEnabledChanged).toHaveBeenLastCalledWith(false) })
   expect(expired).not.toHaveBeenCalled()
+  // Custom builds omit the analytics service; its terminal error must not end account streams.
+  onAnalyticsEnabledChanged.mockClear()
+  socket.send(JSON.stringify({ type: 'error', streamId: streams.get('productAnalytics/watchPolicy'),
+    error: { code: 'gateway/not-found', message: 'Analytics service unavailable', details: {} } }))
+  await vi.waitFor(() => { expect(onAnalyticsEnabledChanged).toHaveBeenCalledWith(false) })
+  socket.send(JSON.stringify({ type: 'item', streamId: streams.get('account/watch'), value: snapshot }))
+  await vi.waitFor(() => { expect(snapshots).toHaveBeenCalledTimes(2) })
+  expect(failed).not.toHaveBeenCalled()
   socket.send(JSON.stringify({ type: 'item', streamId: streams.get('account/watchExpiry'), value: 'session-expired' }))
   await vi.waitFor(() => { expect(expired).toHaveBeenCalledOnce() })
   stop()

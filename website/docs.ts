@@ -171,6 +171,14 @@ const homeAndGuide = pairedPages([
     order: 2,
   },
   {
+    source: 'docs/user/guide/harness2.md',
+    route: 'guide/harness2.md',
+    label: { root: 'Harness² 优化', en: 'Harness² refinement' },
+    sidebar: { root: 'zh-guide', en: 'en-guide' },
+    section: { root: '自动化', en: 'Automation' },
+    order: 3,
+  },
+  {
     source: 'docs/user/guide/plugin-market.md',
     route: 'guide/plugin-market.md',
     label: { root: '插件索引', en: 'Plugin indexes' },
@@ -346,6 +354,7 @@ const subsystemGroups = [
     ['skills.md', '技能', 'Skills'],
     ['workflow.md', '工作流', 'Workflows'],
     ['subagent.md', '子智能体', 'Subagents'],
+    ['harness2.md', 'Harness² 优化', 'Harness² refinement'],
   ]],
   ['策略与交互', 'Policy and interaction', [
     ['approval.md', '审批', 'Approvals'],
