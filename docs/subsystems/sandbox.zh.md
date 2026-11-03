@@ -40,7 +40,7 @@ type SandboxEnforcement = 'full' | 'partial'
 
 ## 逐调用策略
 
-完整执行策略会按每次能力调用解析并携带。它包括 `danger-full-access`，因此消费方可以只解析一次策略，再决定是否绕过约束。普通工具调用从调用会话的不可变 cwd 派生 `workspaceRoot`；部署配置提供无 agent 调用的回退值和显式额外写入授权。解析器保留执行环境中的绝对路径写法。执行限制的提供方在文件实际存在的位置规范化根目录，因此包含 `symlink/..` 的 cwd 会标识配套子进程提供方实际运行的目录。
+完整执行策略会按每次能力调用解析并携带。它包括 `danger-full-access`，因此消费方可以只解析一次策略，再决定是否绕过约束。普通工具调用从最后记录的隔离根目录或不可变会话 cwd 派生 `workspaceRoot`；部署配置提供无 agent 调用的回退值和显式额外写入授权。解析器保留执行环境中的绝对路径写法。执行限制的提供方在文件实际存在的位置规范化根目录，因此包含 `symlink/..` 的 cwd 会标识配套子进程提供方实际运行的目录。
 
 ```ts type-equiv
 /**
@@ -76,7 +76,7 @@ interface SandboxExecutionPolicy {
 ```ts type-equiv
 /** Inputs that select the sandbox policy for one capability call. */
 interface SandboxPolicyRequest {
-  /** Calling session; its immutable cwd becomes the workspace boundary. */
+  /** Calling session; its logged isolated root or immutable cwd supplies the writable workspace. */
   session?: Session
   /** Explicit approved mode override, which outranks session policy. */
   mode?: SandboxMode
@@ -206,9 +206,9 @@ The sandbox-policy service (`ctx.sandboxPolicy`). Owns the deployment default mo
 /**
  * Resolve the complete policy for one capability call. An approved explicit
  * mode outranks the session's last `sandbox/mode` event, which outranks the
- * deployment default. A session cwd is its workspace-write boundary; the
- * configured root is the fallback for agentless calls and sessions without a
- * cwd.
+ * deployment default. The last sandbox/workspace-root event overrides the
+ * immutable session cwd for isolated executions. The configured root is the
+ * fallback for agentless calls and sessions without a cwd.
  * @param request - optional session and approved mode override.
  * @returns the fully resolved per-call mode and absolute workspace root.
  */
@@ -220,6 +220,13 @@ resolve(request: SandboxPolicyRequest = {}): SandboxExecutionPolicy
  * @returns the last logged mode, or `undefined` without one.
  */
 overrideOf(session: Session): SandboxMode | undefined
+
+/**
+ * Set the writable workspace for an isolated Session before its first confined call.
+ * @param session - Session whose subsequent sandbox calls use this directory.
+ * @param root - Absolute directory owned by the isolated execution.
+ */
+setWorkspaceRoot(session: Session, root: string): void
 ```
 
 Types: [Session](session.zh.md)

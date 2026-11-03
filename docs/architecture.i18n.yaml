@@ -18,10 +18,10 @@
   en: b9eeb18645121a8b
   zh: 70d87a12c43e042a
 /deepseek-harness-architecture/core-packages:
-  en: 20ef882e44b06a10
+  en: 24b3cbbce1d7391f
   zh: c10c3934ed5570e9
 /deepseek-harness-architecture/events:
-  en: 693407efb233f961
+  en: c61e168740ef4033
   zh: 37b9dd0677d4405c
 /deepseek-harness-architecture/turn-flow:
   en: 1a79a70b62c04cdb
@@ -30,8 +30,8 @@
   en: b3b63d8fe7cab9fe
   zh: 3703fcf30b1639d0
 /deepseek-harness-architecture/capability-seams:
-  en: a5bc20c3f2a1b370
-  zh: 91773a281410b2f4
+  en: 2ebcaffc05073d96
+  zh: 39a26631c8c37f8f
 /deepseek-harness-architecture/where-new-behavior-goes:
   en: ee73b1861378b099
   zh: 9a182be609485f67

@@ -85,6 +85,7 @@ import * as ToolWeb from '@deepseek-ai/dsh-tool-web'
 import WorkflowEngine from '@deepseek-ai/dsh-workflow'
 import type { WorkflowRun, WorkflowStartRequest } from '@deepseek-ai/dsh-workflow'
 import * as ToolRalph from '@deepseek-ai/dsh-tool-ralph'
+import * as ToolHarness2 from '@deepseek-ai/dsh-tool-harness2'
 import * as ToolWorkflow from '@deepseek-ai/dsh-tool-workflow'
 import * as ToolWorkspaceDependencies from '@deepseek-ai/dsh-tool-workspace-dependencies'
 import { githubSlug } from './verify-md-links.ts'
@@ -490,6 +491,25 @@ const TOOL_PACKAGES: ToolPackage[] = [
     },
     note:
       'The lsp tool keeps provider selection and language-server subprocesses behind ctx.lsp, so its model-visible schema stays stable across providers. Requires a registered provider (e.g. `@deepseek-ai/dsh-lsp-stdio`) at runtime; without one, a query returns the structured `LSP_UNAVAILABLE` error rather than changing the schema.',
+  },
+  {
+    pkg: '@deepseek-ai/dsh-tool-harness2',
+    dir: 'tool-harness2',
+    source: 'packages/subagent/tool-harness2/src/index.ts',
+    requires: ['ctx.tools', 'ctx.harness2', 'a calling Agent'],
+    writes: ['tool/call', 'tool/result', 'harness2/*', 'child Sessions', 'Harness² preview and lesson storage'],
+    async mount(ctx) {
+      ctx.provide('harness2', {
+        run: () => Promise.reject(new Error('gen-tool-catalog: Harness² execution is unavailable during schema harvest')),
+        remember: () => Promise.reject(new Error('gen-tool-catalog: Harness² adoption is unavailable during schema harvest')),
+        applyChanges: () => Promise.reject(new Error('gen-tool-catalog: Harness² patch application is unavailable during schema harvest')),
+        activate: () => Promise.reject(new Error('gen-tool-catalog: Harness² activation is unavailable during schema harvest')),
+        deactivate: () => Promise.reject(new Error('gen-tool-catalog: Harness² deactivation is unavailable during schema harvest')),
+        status: () => { throw new Error('gen-tool-catalog: Harness² status is unavailable during schema harvest') },
+      })
+      await ctx.plugin(ToolHarness2)
+    },
+    note: 'Included in full base-backed profiles and the Web/Desktop standard, cordis, and ptc presets. Solvers use coding tools in private workspace copies when sandbox providers are available; otherwise they report read-only execution. File editors change only the candidate harness. Apply installs an approved selected patch; remember accepts guidance; activate binds a revision to new workspace sessions. Status lists revisions; deactivate stops future installations.',
   },
   {
     pkg: '@deepseek-ai/dsh-tool-ralph',

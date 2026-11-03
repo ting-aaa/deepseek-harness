@@ -35,6 +35,11 @@ export interface SubagentActivationSpec {
   readonly label: string
   /** Optional reserved identity for a local child; external backends allocate their own ids. */
   readonly childId?: SessionId
+  /**
+   * Run a local child without accepting follow-up input or cold resume. Omitted
+   * or false keeps local children continuable; external runs are already one-shot.
+   */
+  readonly oneShot?: boolean
   /** Task, parent, and backend-supported execution options. */
   readonly request: Omit<SubagentStartRequest, 'label' | 'signal'>
   /** Cancellation before publication; callers own later cancellation through dispose. */

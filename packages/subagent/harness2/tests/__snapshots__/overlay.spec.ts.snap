@@ -1,0 +1,14 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`remembers, activates, rolls back, and deactivates workspace guidance for new Agents only > adopted revision session record 1`] = `
+{
+  "data": {
+    "candidateHash": "6704b1aedbe91f743c97142a7cc7b2e1228db612bef8d65f4a31ee8976da96c0",
+    "domain": "ledger",
+    "mode": "parallel",
+    "revision": 2,
+    "workspace": "<workspace>",
+  },
+  "type": "harness2/overlay",
+}
+`;

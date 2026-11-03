@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Outils d’aperçu Harness²",
+    "description": "Permet à l’agent de demander des aperçus Harness² et d’enregistrer explicitement les enseignements du domaine après examen."
+  }
+}

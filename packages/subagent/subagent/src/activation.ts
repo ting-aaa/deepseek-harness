@@ -77,6 +77,8 @@ interface ActivationBase {
 export type ActivationResource =
   | {
     readonly kind: 'local'
+    /** Durable lifecycle mode selected at creation; cold resumes are continuable. */
+    readonly mode: 'one-shot' | 'continuable'
     readonly handle: AgentHandle
     readonly outputStart: SessionLogOffset
     readonly structured: StructuredAttachment | undefined

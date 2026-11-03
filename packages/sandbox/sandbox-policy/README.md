@@ -45,7 +45,7 @@ Load the package with a default mode; the fail-safe default is `read-only`, and 
 | Field | Default | Meaning |
 |---|---|---|
 | `mode` | `read-only` | The deployment default mode a session starts from, validated at load |
-| `workspaceRoot` | `process.cwd()` | Absolute fallback root for agentless calls or sessions without a cwd; relative values fail at load. Normal agent calls use the session's immutable cwd |
+| `workspaceRoot` | `process.cwd()` | Absolute fallback root for agentless calls or sessions without a cwd; relative values fail at load. Session root overrides precede the immutable cwd |
 | `additionalWritableRoots` | `[]` | Explicit physical absolute directories also writable under `workspace-write`; other confined modes grant no access to them |
 
 For a linked Git worktree, the caller can grant its shared Git directory with `additionalWritableRoots`. The caller selects that directory explicitly; the policy does not inspect Git files or grant a parent checkout. These grants are deployment configuration shared by the composition's sessions, rather than saved Session permissions. Granting the entire Git directory also permits changes to hooks and configuration that a later host Git invocation can execute outside the sandbox; use that grant only for trusted tasks. Use physical absolute directory paths. The enforcing host rejects missing paths, files, and symlinked roots, including a directory replaced by a symlink between calls. Remote grants are validated on the remote host.
@@ -54,7 +54,7 @@ The generated [configuration catalog](../../../docs/config-catalog.md#deepseek-a
 
 ### Switching a session's mode
 
-A session's mode can be switched at runtime through a UI policy control or an explicit switch; the switch is recorded in the session log and takes effect on the session's next confined call. The switch survives restart through replay, and each session keeps its own mode — two sessions never see each other's state. A switched session keeps its immutable workspace cwd as the writable boundary.
+A session can switch its mode through a UI policy control or explicit switch; the logged choice applies on its next confined call and survives replay. `setWorkspaceRoot(session, root)` records a separate absolute writable root for an isolated execution. This overrides the immutable Session origin without changing another session or granting additional writable roots.
 
 ### Failures and recovery
 
@@ -72,11 +72,11 @@ This section explains policy resolution, the per-session store, and the model-vi
 
 ### Resolution precedence
 
-`resolve({ session, mode })` returns one complete per-call policy: an approved explicit mode outranks the session's last `sandbox/mode` event, which outranks the deployment default. The session's immutable `cwd` supplies the workspace root; otherwise the configured fallback applies. Absolute execution-world spelling is preserved. Enforcing providers canonicalize the root on their own filesystem, so remote `symlink/..` paths are never resolved on the Harness host.
+`resolve({ session, mode })` resolves an approved explicit mode, then the logged session mode, then the deployment default. Its workspace root is the last `sandbox/workspace-root`, otherwise immutable `SessionHeader.cwd`, otherwise the configured fallback. Enforcing providers canonicalize execution-world paths where the files exist.
 
 ### The per-session store
 
-A runtime switch is one log-only `sandbox/mode` event on the session it applies to — the switch IS its event, and nothing mutates mode state out of band. `effective = explicit grant ?? fold(events) ?? deployment default`, so an override survives restart by replay and two sessions never see each other's state. Workspace identity needs no event: the immutable `SessionHeader.cwd` recorded at creation is the root for every call in that session. The event stays log-only; before each request, the owner contributes the current fact to the full runtime-context snapshot, and the agent loop logs that snapshot as a sourced `user/message`.
+Mode and isolated-root switches append `sandbox/mode` and `sandbox/workspace-root` respectively. Private Session projections reconstruct the effective values without external state. The root event is non-ignorable: readers that do not understand it must refuse the Session. Before each model request, the resolved policy enters the logged runtime-context snapshot.
 
 ### Model-visible text
 

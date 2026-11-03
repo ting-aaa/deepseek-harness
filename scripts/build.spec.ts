@@ -7,6 +7,7 @@ const root = resolve(import.meta.dirname, '..')
 
 const artifactGraph = {
   'native': [],
+  'harness2-assets': [],
   'host-typert': [],
   'host-src': ['native', 'host-typert'],
   'host-bundle': ['host-src'],

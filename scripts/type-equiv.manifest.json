@@ -2748,6 +2748,26 @@
       "source": "packages/experimental/client-ui-forge/src/types.ts"
     },
     {
+      "doc": "docs/subsystems/harness2.md",
+      "symbol": "Harness2RunId",
+      "source": "packages/subagent/harness2/src/types.ts"
+    },
+    {
+      "doc": "docs/subsystems/harness2.md",
+      "symbol": "Harness2Request",
+      "source": "packages/subagent/harness2/src/types.ts"
+    },
+    {
+      "doc": "docs/subsystems/harness2.md",
+      "symbol": "Harness2Stage",
+      "source": "packages/subagent/harness2/src/types.ts"
+    },
+    {
+      "doc": "docs/subsystems/harness2.md",
+      "symbol": "Harness2Result",
+      "source": "packages/subagent/harness2/src/types.ts"
+    },
+    {
       "doc": "docs/subsystems/forge.md",
       "symbol": "ForgeLineComment",
       "source": "packages/experimental/forge/src/types.ts"
@@ -2761,6 +2781,11 @@
       "doc": "docs/subsystems/forge.md",
       "symbol": "ForgeReviewResult",
       "source": "packages/experimental/forge/src/types.ts"
+    },
+    {
+      "doc": "docs/subsystems/harness2.md",
+      "symbol": "Harness2Binding",
+      "source": "packages/subagent/harness2/src/overlay.ts"
     }
   ]
 }

@@ -4,8 +4,9 @@ import type { AfterPackContext, BeforePackContext } from 'app-builder-lib'
 export interface DesktopElectronBuilderConfig {
   readonly appId: string
   readonly copyright: string
+  readonly productName: string
   readonly artifactName: string
-  readonly protocols: readonly [{ readonly name: 'DeepSeek Harness'; readonly schemes: readonly ['dsh'] }]
+  readonly protocols: readonly { readonly name: 'DeepSeek Harness'; readonly schemes: readonly ['dsh'] }[]
   readonly directories: {
     readonly output: string
   }
@@ -14,7 +15,7 @@ export interface DesktopElectronBuilderConfig {
     { readonly from: string, readonly to: 'dsh', readonly filter: readonly ['**/*'] },
     { readonly from: string, readonly to: 'dsh/node_modules', readonly filter: readonly ['**/*'] },
   ]
-  readonly extraMetadata: { readonly dshDesktopAppId: string }
+  readonly extraMetadata: { readonly dshDesktopAppId: string; readonly name?: string; readonly dshDesktopForkFlavor?: 'harness2'; readonly dshMandatoryUpdatePolicy?: object }
   readonly asarUnpack: readonly string[]
   readonly extraResources: readonly [
     { readonly from: string, readonly to: 'runtime' },

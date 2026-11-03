@@ -1,0 +1,72 @@
+{
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "lib/types"
+  },
+  "include": [
+    "src"
+  ],
+  "references": [
+    {
+      "path": "../../../vendor/cordis"
+    },
+    {
+      "path": "../../../vendor/cosmokit"
+    },
+    {
+      "path": "../../../vendor/schemastery"
+    },
+    {
+      "path": "../../core/agent"
+    },
+    {
+      "path": "../../core/session"
+    },
+    {
+      "path": "../../core/tool-executor-native"
+    },
+    {
+      "path": "../../core/tools"
+    },
+    {
+      "path": "../../storage/storage-domain"
+    },
+    {
+      "path": "../../subagent/subagent"
+    },
+    {
+      "path": "../../util/brand"
+    },
+    {
+      "path": "../../llm/llm"
+    },
+    {
+      "path": "../../interaction/user-approval"
+    },
+    {
+      "path": "../../core/system-prompt"
+    },
+    {
+      "path": "../../skill/skill"
+    },
+    {
+      "path": "../../session/working-directory"
+    },
+    {
+      "path": "../../session/session-projection"
+    },
+    {
+      "path": "../../subprocess/subprocess"
+    },
+    {
+      "path": "../../sandbox/sandbox-policy"
+    },
+    {
+      "path": "../../shell/shell"
+    },
+    {
+      "path": "../../fs/fs"
+    }
+  ]
+}

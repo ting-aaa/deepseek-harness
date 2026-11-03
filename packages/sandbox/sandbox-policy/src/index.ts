@@ -112,7 +112,7 @@ export interface Config {
 
 /** Inputs that select the sandbox policy for one capability call. */
 export interface SandboxPolicyRequest {
-  /** Calling session; its immutable cwd becomes the workspace boundary. */
+  /** Calling session; its logged isolated root or immutable cwd supplies the writable workspace. */
   session?: Session
   /** Explicit approved mode override, which outranks session policy. */
   mode?: SandboxMode
@@ -150,6 +150,7 @@ export class SandboxPolicyService extends Service {
   /** The frozen extra writable directories shared by every resolved policy, or `undefined` for none. */
   readonly additionalWritableRoots: readonly string[] | undefined
   private sandboxModeProjectionHandle!: ProjectionHandle<SandboxMode | null>
+  private workspaceRootProjectionHandle!: ProjectionHandle<string | null>
 
   constructor(ctx: Context, config: Config) {
     super(ctx, 'sandboxPolicy')
@@ -170,6 +171,11 @@ export class SandboxPolicyService extends Service {
       init: () => null,
       apply: (state, event) => (event.type === 'sandbox/mode' ? event.data.mode : state),
     })
+    this.workspaceRootProjectionHandle = await ctx.sessionProjections.register({
+      key: 'sandboxWorkspaceRoot', stateVersion: 1,
+      stateSchema: zod.string().refine(root => isAbsolute(root) && !root.includes('\0')).nullable(), init: () => null,
+      apply: (state, event) => event.type === 'sandbox/workspace-root' ? event.data.root : state,
+    })
 
     ctx.inject(['systemPrompt'], (scope: Context) => {
       scope.systemPrompt.context({
@@ -188,9 +194,9 @@ export class SandboxPolicyService extends Service {
   /**
    * Resolve the complete policy for one capability call. An approved explicit
    * mode outranks the session's last `sandbox/mode` event, which outranks the
-   * deployment default. A session cwd is its workspace-write boundary; the
-   * configured root is the fallback for agentless calls and sessions without a
-   * cwd.
+   * deployment default. The last sandbox/workspace-root event overrides the
+   * immutable session cwd for isolated executions. The configured root is the
+   * fallback for agentless calls and sessions without a cwd.
    * @param request - optional session and approved mode override.
    * @returns the fully resolved per-call mode and absolute workspace root.
    */
@@ -198,7 +204,8 @@ export class SandboxPolicyService extends Service {
     const { session } = request
     return {
       mode: request.mode ?? (session === undefined ? undefined : this.overrideOf(session)) ?? this.defaultMode,
-      workspaceRoot: resolveWorkspaceRoot(session?.header.cwd ?? this.workspaceRoot),
+      workspaceRoot: resolveWorkspaceRoot((session === undefined ? null : this.workspaceRootProjectionHandle.stateOf(session))
+        ?? session?.header.cwd ?? this.workspaceRoot),
       ...this.additionalWritableRoots === undefined ? {} : { additionalWritableRoots: this.additionalWritableRoots },
       ...session === undefined ? {} : { sessionId: session.id },
     }
@@ -211,6 +218,15 @@ export class SandboxPolicyService extends Service {
    */
   overrideOf(session: Session): SandboxMode | undefined {
     return this.sandboxModeProjectionHandle.stateOf(session) ?? undefined
+  }
+
+  /**
+   * Set the writable workspace for an isolated Session before its first confined call.
+   * @param session - Session whose subsequent sandbox calls use this directory.
+   * @param root - Absolute directory owned by the isolated execution.
+   */
+  setWorkspaceRoot(session: Session, root: string): void {
+    session.append('sandbox/workspace-root', { root: resolveWorkspaceRoot(root) })
   }
 }
 

@@ -26,7 +26,7 @@ import {
 import type { ChildComposition, DelegatedPolicyOverrides } from './child-agent.ts'
 import { createAgentMessage, withContinuableReturnGuidance, createSettlementMessage } from './continuation-messages.ts'
 import { assertSubagentMaxDepth } from './depth.ts'
-import { foldSubagentDescriptor, snapshotSubagentDescriptor } from './descriptor.ts'
+import { foldSubagentDescriptor, snapshotSubagentDescriptor, SUBAGENT_DESCRIPTOR_VERSION } from './descriptor.ts'
 import type { SubagentDescriptorData } from './descriptor.ts'
 import { establishCatalogChild, establishExternalCatalogChild } from './catalog.ts'
 import { SubagentError } from './error.ts'
@@ -370,7 +370,7 @@ export class SubagentManager {
   }
 
   /**
-   * Start one continuable background child and resolve at initial inbox acceptance.
+   * Start one local child and resolve at initial inbox acceptance.
    * Every earlier failure disposes any created handle and rolls back Activation
    * and parent ownership without returning either id.
    * @param spec - provider, delegation request, and caller cancellation.
@@ -391,7 +391,12 @@ export class SubagentManager {
     const agentProvider = agentOptions.provider
     const agentModel = agentOptions.model
     const agentReasoningEffort = agentOptions.reasoningEffort
-    const descriptor = snapshotSubagentDescriptor({
+    const descriptor = spec.oneShot === true ? {
+      version: SUBAGENT_DESCRIPTOR_VERSION,
+      mode: 'one-shot' as const,
+      provider: spec.provider,
+      label: spec.label,
+    } : snapshotSubagentDescriptor({
       mode: 'continuable',
       provider: spec.provider,
       label: spec.label,
@@ -458,7 +463,7 @@ export class SubagentManager {
         const childHeader = child.session.header
         return await this.submitMaterialized(
           activation,
-          spec.delivery !== 'caller' && isAdjacentAgentSendMessageTool(this.ctx.get('tools')?.get('send_message', child))
+          descriptor.mode === 'continuable' && spec.delivery !== 'caller' && isAdjacentAgentSendMessageTool(this.ctx.get('tools')?.get('send_message', child))
             ? withContinuableReturnGuidance(parent.id, request.prompt)
             : request.prompt,
           { source: { kind: 'user' }, signal: spec.signal, delivery: 'queue' },
@@ -923,6 +928,7 @@ export class SubagentManager {
 
       resource = {
         kind: 'local',
+        mode: create?.descriptor.mode ?? 'continuable',
         handle,
         outputStart: handle.agent.session.seq,
         structured,
@@ -1209,7 +1215,9 @@ export class SubagentManager {
       const parent = this.ctx.agents.get(activation.parent.id)
       if (parent !== activation.parent) return
       const message = createSettlementMessage(
-        activation.childId, terminal, activation.kind === 'local', activation.kind === 'local' && activation.omitClosingText,
+        activation.childId, terminal,
+        activation.kind === 'local' && activation.mode === 'continuable',
+        activation.kind === 'local' && activation.mode === 'continuable' && activation.omitClosingText,
       )
       if (this.closingTeardownFor(parent) !== undefined) {
         parent.inject(message)
@@ -1273,7 +1281,10 @@ export class SubagentManager {
       const live = await this.locks.run(childId, async () => {
         const activation = this.resident.get(childId)
         if (activation === undefined) return this.coldResume(parent, childId, content, options)
-        requireLocalActivation(activation)
+        const local = requireLocalActivation(activation)
+        if (local.mode === 'one-shot') {
+          throw new SubagentError(`subagent "${childId}" does not accept follow-up input`, 'NOT_CONTINUABLE')
+        }
         const disposal = activation.closing
         /* v8 ignore next 3 -- the send-versus-dispose cutoff needs a delivery to
          * observe the transaction inside the same critical section that opened it. */

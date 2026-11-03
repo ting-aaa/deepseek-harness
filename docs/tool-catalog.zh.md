@@ -40,6 +40,7 @@
 | `@deepseek-ai/dsh-tool-goal` | `create_goal`、`get_goal`、`update_goal` | `ctx.tools`、`ctx.agents`、`ctx.goals`、`ctx.systemPrompt`、`a calling Agent in an authorized open turn` | `tool/call`、`goal/change for mutations`、`tool/result` | - | create、edit、pause 和 resume 要求直接来自人类的根权限；complete 和 blocked 也接受确切的当前 Goal Round。blocked 的默认下限是 3 个获准的 Round。 |
 | `@deepseek-ai/dsh-tool-schedule` | `schedule_create`、`schedule_edit`、`schedule_list`、`schedule_view` | `ctx.tools`、`ctx.schedule`、`ctx.systemPrompt` | `tool/call`、Schedule storage domain 创建、更新或删除、`tool/result` | - | preset 或 Agent scope 挂载本包，并决定哪些 Agent 获得工具。管理工具按 id 跨会话读写 Host 的任务。任务保存 RFC 5545 重复规则，执行位置可选已有会话、首次创建后复用的会话或每次运行新建的会话。委派子 Agent 不能调用这些工具。 |
 | `@deepseek-ai/dsh-tool-lsp` | `lsp` | `ctx.workingDirectory`、`ctx.tools`、`ctx.lsp`、`ctx.systemPrompt` | `tool/call`、`tool/result` | - | lsp 工具将提供方选择和语言服务器子进程置于 ctx.lsp 之后，因此其模型可见 schema 在更换提供方时保持稳定。运行时要求已注册提供方，例如 `@deepseek-ai/dsh-lsp-stdio`；如果没有提供方，查询会返回结构化 `LSP_UNAVAILABLE` 错误，而不会改变 schema。 |
+| `@deepseek-ai/dsh-tool-harness2` | `harness2`, `harness2_activate`, `harness2_apply`, `harness2_deactivate`, `harness2_remember`, `harness2_status` | `ctx.tools`, `ctx.harness2`, `a calling Agent` | `tool/call`, `tool/result`, `harness2/*`, `child Sessions`, `Harness² preview and lesson storage` | - | 完整配置内置。私有副本编码与文件候选编辑；补丁应用、保存和激活分别批准。 |
 | `@deepseek-ai/dsh-tool-ralph` | `ralph` | `ctx.tools`、`ctx.workflowEngine`、`ctx.subagents`、`ctx.systemPrompt`、`a calling Agent (exec.agent parents every fresh round)` | `tool/call`、`tool/result`、`workflow and child session events during execution` | - | 固定的前台工作流会在每个 Round 启动一个全新的结构化子级；模型只能选择不可变目标和可选的 Round 上限。 |
 | `@deepseek-ai/dsh-tool-skill` | `skill` | `ctx.workingDirectory`、`ctx.tools`、`ctx.agents`、`ctx.skills` | `tool/call`、`tool/result`、`user/message replacement catalogs via agent.inject()` | - | - |
 | `@deepseek-ai/dsh-tool-session-query` | `session_event_read`、`session_event_search`、`session_event_trace`、`session_search`、`session_trace` | `ctx.tools`、`ctx.systemPrompt`、`ctx.sessionQuery`、`a calling Agent for workspace authority` | `tool/call`、`tool/result` | - | 这 5 个只读工具会隐藏提供方游标，并根据不可变的调用 agent 会话为每个结果授权。该包需要选择启用；需要强制截止时间或限制行内输出的组合还会挂载通用超时或 spill 策略。 |
@@ -1702,6 +1703,159 @@ preset 或 Agent scope 挂载本包，并决定哪些 Agent 获得工具。管�
 来源：[`packages/lsp/tool-lsp/src/index.ts`](../packages/lsp/tool-lsp/src/index.ts)
 
 lsp 工具将提供方选择和语言服务器子进程置于 ctx.lsp 之后，因此其模型可见 schema 在更换提供方时保持稳定。运行时要求已注册提供方，例如 `@deepseek-ai/dsh-lsp-stdio`；如果没有提供方，查询会返回结构化 `LSP_UNAVAILABLE` 错误，而不会改变 schema。
+
+<a id="deepseek-aidsh-tool-harness2"></a>
+
+## `@deepseek-ai/dsh-tool-harness2`
+
+### `harness2`
+
+当额外探索有帮助时，为复杂或不确定任务运行有界的 Harness² 提案、探查与组合预览。支持并行或顺序递归及持久阶段恢复。获得批准且实施沙箱的提供方可用时，求解子会话在独立工作区副本中使用编码工具；否则结果报告只读执行。返回选中补丁，不修改父工作区。评审证据后通过 harness2_apply 单独批准应用。返回答案、候选指令、反思与证据会话标识，不验证正确性，也不采纳候选。调用 harness2_remember 前应展示预览。
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "task": {
+      "type": "string",
+      "description": "Complete task and relevant source paths or material, without secrets; permitted read-only tools may inspect task inputs."
+    },
+    "domain": {
+      "type": "string",
+      "description": "Stable domain-library key; only explicitly remembered guidance from this domain is reused."
+    },
+    "mode": {
+      "type": "string",
+      "description": "Independent parallel compositions or sequential refinement with growing history.",
+      "enum": [
+        "parallel",
+        "sequential"
+      ]
+    },
+    "k": {
+      "type": "integer",
+      "description": "Width or depth, within deployment limits; 4k rollouts and 3k improvement stages."
+    },
+    "resumeRunId": {
+      "type": "string",
+      "description": "Resume the same task and settings from durable stage checkpoints."
+    }
+  },
+  "required": [
+    "task",
+    "domain"
+  ]
+}
+```
+
+Source: [`packages/subagent/tool-harness2/src/index.ts`](../packages/subagent/tool-harness2/src/index.ts)
+
+### `harness2_activate`
+
+仅在用户明确要求时，将已保存的 Harness² 修订应用到当前工作区的新会话。之后的顶层会话获得低信任指导、技能、委派与隔离辅助程序；当前对话不变，权限不扩大。可指定较早修订回滚；需要用户批准。
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "domain": {
+      "type": "string",
+      "description": "Domain whose remembered revision to apply."
+    },
+    "mode": {
+      "type": "string",
+      "description": "Recursion-mode library; defaults to the deployment mode.",
+      "enum": [
+        "parallel",
+        "sequential"
+      ]
+    },
+    "revision": {
+      "type": "integer",
+      "description": "Remembered revision; defaults to the latest. Use harness2_status to list revisions."
+    }
+  },
+  "required": [
+    "domain"
+  ]
+}
+```
+
+Source: [`packages/subagent/tool-harness2/src/index.ts`](../packages/subagent/tool-harness2/src/index.ts)
+
+### `harness2_apply`
+
+将已评审工作区预览的选中补丁应用到原工作区。要求原始父会话及单独一次性批准。冲突修改会在上下文检查时失败。应用中断后，重试前应先检查工作区。
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "runId": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "runId"
+  ]
+}
+```
+
+Source: [`packages/subagent/tool-harness2/src/index.ts`](../packages/subagent/tool-harness2/src/index.ts)
+
+### `harness2_deactivate`
+
+停止向当前工作区的新会话应用 Harness² 指导。运行中的会话保留已安装内容。
+
+```json
+{
+  "type": "object",
+  "properties": {}
+}
+```
+
+Source: [`packages/subagent/tool-harness2/src/index.ts`](../packages/subagent/tool-harness2/src/index.ts)
+
+### `harness2_remember`
+
+仅在用户明确批准保存后，记住已评审的 Harness² 预览。预览必须归属本会话并使用当前领域经验库修订。它影响未来同领域实验，不改变当前对话、权限、工具或全局提示词。通过 harness2_activate 可将已保存修订应用到本工作区的新会话。
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "runId": {
+      "type": "string",
+      "description": "Run id of the preview the user approved."
+    }
+  },
+  "required": [
+    "runId"
+  ]
+}
+```
+
+Source: [`packages/subagent/tool-harness2/src/index.ts`](../packages/subagent/tool-harness2/src/index.ts)
+
+### `harness2_status`
+
+显示当前工作区的活动 Harness² 修订，以及可激活或回滚的已保存修订。
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "domain": {
+      "type": "string",
+      "description": "Only list revisions of this domain."
+    }
+  }
+}
+```
+
+Source: [`packages/subagent/tool-harness2/src/index.ts`](../packages/subagent/tool-harness2/src/index.ts)
+
+完整基础配置及 Web／Desktop 的 standard、cordis、ptc 预设包含这些工具。沙箱可用时求解器在私有副本中使用编码工具，否则报告只读执行。文件编辑器只修改候选 harness。apply 应用经批准的选中补丁，remember 保存指导，activate 将修订绑定到新工作区会话。status 列出修订，deactivate 停止后续安装。
 
 <a id="deepseek-aidsh-experimental-tool-ralph"></a>
 

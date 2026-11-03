@@ -43,6 +43,24 @@ async function policyContext(ctx: Context, activeSession: Session): Promise<stri
 }
 
 describe('SandboxPolicyService', () => {
+  it('records an isolated workspace root without changing mode or another Session', async () => {
+    const ctx = await mounted({ mode: 'workspace-write', workspaceRoot: '/fallback' })
+    try {
+      const child = session('isolated-child', '/original')
+      const other = session('other-child', '/other')
+      ctx.sandboxPolicy.setWorkspaceRoot(child, '/private-copy')
+      expect(ctx.sandboxPolicy.resolve({ session: child })).toMatchObject({ mode: 'workspace-write', workspaceRoot: '/private-copy' })
+      expect(ctx.sandboxPolicy.resolve({ session: other }).workspaceRoot).toBe('/other')
+      expect(child.header.cwd).toBe('/original')
+      const replay = session('replayed-child', '/original')
+      replay.append('sandbox/workspace-root', { root: '/private-copy' })
+      expect(ctx.sandboxPolicy.resolve({ session: replay }).workspaceRoot).toBe('/private-copy')
+      expect(() => { ctx.sandboxPolicy.setWorkspaceRoot(child, 'relative') }).toThrow('absolute execution-world path')
+      expect(() => { ctx.sandboxPolicy.setWorkspaceRoot(child, '/bad\0root') }).toThrow('absolute execution-world path')
+      expect(ctx.sandboxPolicy.resolve({ session: child }).workspaceRoot).toBe('/private-copy')
+    } finally { await ctx.fiber.dispose() }
+  })
+
   it('defaults to read-only under the process cwd', async () => {
     const ctx = await mounted()
     expect(ctx.sandboxPolicy.defaultMode).toBe('read-only')

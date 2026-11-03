@@ -35,6 +35,11 @@ interface SubagentActivationSpec {
   readonly label: string
   /** Optional reserved identity for a local child; external backends allocate their own ids. */
   readonly childId?: SessionId
+  /**
+   * Run a local child without accepting follow-up input or cold resume. Omitted
+   * or false keeps local children continuable; external runs are already one-shot.
+   */
+  readonly oneShot?: boolean
   /** Task, parent, and backend-supported execution options. */
   readonly request: Omit<SubagentStartRequest, 'label' | 'signal'>
   /** Cancellation before publication; callers own later cancellation through dispose. */
@@ -129,7 +134,7 @@ interface ResolvedSubagentStartRequest extends SubagentStartRequest {
 
 只有 spawn 支持独立的 `agentPreset`；省略选择与 fork 都继承父方的活跃组装。[子级 preset 规则](../../packages/subagent/subagent/README.zh.md#restoring-child-composition)定义显式选择、事件顺序和历史恢复行为。
 
-本地子代理拥有持久 Session，最多有一个在线 activation。Manager 预留身份和容量，通过后端准备子代理，并管理输入准入、冷恢复以及先子后父的释放顺序。activation 结果在资源释放和完成通知之后结算。释放操作单独报告清理失败，不会覆盖已捕获的结果。结构化结果提交会关闭该 activation 的输入；之后的冷恢复不会继承输出 schema。
+本地子代理拥有持久 Session，最多有一个在线 activation。Manager 预留身份和容量，通过后端准备子代理，并管理输入准入、冷恢复以及先子后父的释放顺序。activation 结果在资源释放和完成通知之后结算。释放操作单独报告清理失败，不会覆盖已捕获的结果。结构化结果提交会关闭该 activation 的输入；之后的冷恢复不会继承输出 schema。通过 `oneShot: true` 启动的 activation 持久保留已有的一次性模式，并拒绝后续投递或冷恢复；其 Session 仍可读取，不会重新激活临时工具或保护措施。省略此选项时，本地继续行为不变。
 
 ```ts type-equiv
 /**
@@ -173,7 +178,7 @@ interface ContinuableCreateSpec {
 
 ## 消息与中断
 
-sendMessage 根据确切的在线发送者实例授权，仅允许相邻本地代理通信。运行中的子代理接收引导输入；不在线的可继续子代理从持久化恢复。外部执行拒绝后续消息。本地与外部执行都会通过父级结束通知自动回传最终文本、结构化结果、诊断和状态。本地子代理也可以通过 send_message 发送消息。caller 回传会抑制结束通知。drainDescendants 与 drainChildren 对本地和外部 activation 都等待所属任务清理完成。
+sendMessage 根据确切的在线发送者实例授权，仅允许相邻本地代理通信。运行中的子代理接收引导输入；不在线的可继续子代理从持久化恢复。外部执行拒绝后续消息。本地与外部执行都会通过父级结束通知自动回传最终文本、结构化结果、诊断和状态。可继续的本地子代理也可以通过 send_message 发送消息。caller 回传会抑制结束通知。drainDescendants 与 drainChildren 对本地和外部 activation 都等待所属任务清理完成。
 
 ```ts type-equiv
 /** Durable attribution for one model-authored message between Agents. */

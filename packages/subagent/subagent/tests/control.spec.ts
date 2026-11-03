@@ -269,6 +269,7 @@ describe('subagent prompt Remote', () => {
     const { subagents } = await bench({ [PARENT]: { status: 'idle' } })
     const delivery = promptDelivery(subagents)
     const cases: readonly [string, string][] = [
+      ['NOT_CONTINUABLE', 'subagent/not-resumable'],
       ['NOT_RESUMABLE', 'subagent/not-resumable'],
       ['UNAUTHORIZED', 'subagent/unauthorized'],
       ['DRAINING', 'subagent/delivery-unavailable'],

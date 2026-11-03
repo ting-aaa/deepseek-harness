@@ -133,7 +133,7 @@ export const subagentCatalogProjectionDefinition = {
 export function establishCatalogChild(
   parent: Session,
   child: SessionHeader,
-  descriptor: { readonly mode: 'continuable'; readonly label: string },
+  descriptor: { readonly mode: 'one-shot' | 'continuable'; readonly label: string },
 ): void {
   parent.append('subagent/catalog', {
     version: SUBAGENT_CATALOG_VERSION,

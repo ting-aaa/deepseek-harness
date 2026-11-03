@@ -1,0 +1,34 @@
+{
+  "formatVersion": 2,
+  "roots": [
+    {"key":"event:harness2/end","kind":"event","event":"harness2/end","surface":false,"digest":"442d4fa957723ae7c823c01881d972df869e520765ee0e34169eae51966b7f2c"},
+    {"key":"event:harness2/execution","kind":"event","event":"harness2/execution","surface":false,"digest":"88b78649a4ec6791427750e6a68063d801951dfecda94a9ae0b3df512c7966ff"},
+    {"key":"event:harness2/remember-request","kind":"event","event":"harness2/remember-request","surface":false,"digest":"e65ad4343443164858c3b33843d2d2fd3b08caa3ebf0fc6ca932a0166c35ce32"},
+    {"key":"event:harness2/start","kind":"event","event":"harness2/start","surface":false,"digest":"515c38856c278189f1d3efdba6f602987fb78cb3cb58f609196f25ff2676b131"}
+  ],
+  "types": [],
+  "nodes": {
+    "0657d3ca5ac4e7bf": {"kind":"primitive","type":"number"},
+    "1ebc6f9ff3aa9e3a": {"kind":"literal","value":"completed"},
+    "34c0e45c71ee1b3b": {"kind":"union","types":["1ebc6f9ff3aa9e3a","6022451d897c7050","b57a2889408de36e"]},
+    "442d4fa957723ae7": {"kind":"object","properties":[{"name":"data","type":"567277d4445beee9","optional":false},{"name":"ignorable","type":"dacf3d5f3e4ff619","optional":true},{"name":"seq","type":"0657d3ca5ac4e7bf","optional":false},{"name":"time","type":"0657d3ca5ac4e7bf","optional":false},{"name":"type","type":"bfcc7416224c874a","optional":false}],"indices":[]},
+    "4a258feebe9ec7a9": {"kind":"object","properties":[{"name":"detail","type":"4cd48f3e5108bd6e","optional":false},{"name":"hash","type":"4cd48f3e5108bd6e","optional":false},{"name":"path","type":"4cd48f3e5108bd6e","optional":false},{"name":"status","type":"34c0e45c71ee1b3b","optional":false}],"indices":[]},
+    "4cd48f3e5108bd6e": {"kind":"primitive","type":"string"},
+    "515c38856c278189": {"kind":"object","properties":[{"name":"data","type":"6e288c065c82a5a4","optional":false},{"name":"ignorable","type":"dacf3d5f3e4ff619","optional":true},{"name":"seq","type":"0657d3ca5ac4e7bf","optional":false},{"name":"time","type":"0657d3ca5ac4e7bf","optional":false},{"name":"type","type":"d28cf28202b6dcb3","optional":false}],"indices":[]},
+    "567277d4445beee9": {"kind":"object","properties":[{"name":"childSessions","type":"93c33d9687613293","optional":false},{"name":"runId","type":"4cd48f3e5108bd6e","optional":false},{"name":"status","type":"f52615e9765acb75","optional":false}],"indices":[]},
+    "6022451d897c7050": {"kind":"literal","value":"start"},
+    "62c79b63841167e9": {"kind":"object","properties":[{"name":"domain","type":"4cd48f3e5108bd6e","optional":false},{"name":"revision","type":"0657d3ca5ac4e7bf","optional":false},{"name":"runId","type":"4cd48f3e5108bd6e","optional":false}],"indices":[]},
+    "6e288c065c82a5a4": {"kind":"object","properties":[{"name":"baseRevision","type":"0657d3ca5ac4e7bf","optional":false},{"name":"domain","type":"4cd48f3e5108bd6e","optional":false},{"name":"runId","type":"4cd48f3e5108bd6e","optional":false}],"indices":[]},
+    "6fc47f58eb7ae35c": {"kind":"literal","value":"harness2/remember-request"},
+    "7c3569069047c28e": {"kind":"literal","value":"harness2/execution"},
+    "88b78649a4ec6791": {"kind":"object","properties":[{"name":"data","type":"4a258feebe9ec7a9","optional":false},{"name":"ignorable","type":"dacf3d5f3e4ff619","optional":true},{"name":"seq","type":"0657d3ca5ac4e7bf","optional":false},{"name":"time","type":"0657d3ca5ac4e7bf","optional":false},{"name":"type","type":"7c3569069047c28e","optional":false}],"indices":[]},
+    "93c33d9687613293": {"kind":"array","element":"4cd48f3e5108bd6e"},
+    "b57a2889408de36e": {"kind":"literal","value":"failed"},
+    "bfcc7416224c874a": {"kind":"literal","value":"harness2/end"},
+    "d28cf28202b6dcb3": {"kind":"literal","value":"harness2/start"},
+    "dacf3d5f3e4ff619": {"kind":"literal","value":true},
+    "db0f6239d7e7d55f": {"kind":"literal","value":"computed"},
+    "e65ad43434431648": {"kind":"object","properties":[{"name":"data","type":"62c79b63841167e9","optional":false},{"name":"ignorable","type":"dacf3d5f3e4ff619","optional":true},{"name":"seq","type":"0657d3ca5ac4e7bf","optional":false},{"name":"time","type":"0657d3ca5ac4e7bf","optional":false},{"name":"type","type":"6fc47f58eb7ae35c","optional":false}],"indices":[]},
+    "f52615e9765acb75": {"kind":"union","types":["b57a2889408de36e","db0f6239d7e7d55f"]}
+  }
+}

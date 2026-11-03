@@ -36,6 +36,7 @@ const FENCE = 'ts persistence-catalog'
 
 /** Documentation target, relative to `docs/`, for linked payload types. */
 const LINK_MAP: Record<string, string> = {
+  Harness2RunId: 'subsystems/harness2.md',
   ToolCallId: 'subsystems/core.md',
   ContentBlock: 'subsystems/core.md',
   MessageSource: 'subsystems/core.md',

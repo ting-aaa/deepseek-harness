@@ -144,6 +144,10 @@ flowchart LR
   cfg --> plugin_dsh_base_subagent_spawn_in_process
   plugin_dsh_base_subagent_fork_in_process["subagent-fork-in-process<br/>@deepseek-ai/dsh-subagent-fork-in-process"]
   cfg --> plugin_dsh_base_subagent_fork_in_process
+  plugin_dsh_base_optional_harness2["optional-harness2<br/>@deepseek-ai/dsh-harness2"]
+  cfg --> plugin_dsh_base_optional_harness2
+  plugin_dsh_base_optional_tool_harness2["optional-tool-harness2<br/>@deepseek-ai/dsh-tool-harness2"]
+  cfg --> plugin_dsh_base_optional_tool_harness2
   plugin_dsh_base_tool_subagent_control["tool-subagent-control<br/>@deepseek-ai/dsh-tool-subagent-control"]
   cfg --> plugin_dsh_base_tool_subagent_control
   plugin_dsh_base_tool_subagent["tool-subagent<br/>@deepseek-ai/dsh-tool-subagent"]
@@ -274,6 +278,8 @@ flowchart LR
 | `subagent` | `@deepseek-ai/dsh-subagent` |
 | `subagent-spawn-in-process` | `@deepseek-ai/dsh-subagent-spawn-in-process` |
 | `subagent-fork-in-process` | `@deepseek-ai/dsh-subagent-fork-in-process` |
+| `optional-harness2` | `@deepseek-ai/dsh-harness2` |
+| `optional-tool-harness2` | `@deepseek-ai/dsh-tool-harness2` |
 | `tool-subagent-control` | `@deepseek-ai/dsh-tool-subagent-control` |
 | `tool-subagent` | `@deepseek-ai/dsh-tool-subagent` |
 | `tool-subagent-fork` | `@deepseek-ai/dsh-tool-subagent` |

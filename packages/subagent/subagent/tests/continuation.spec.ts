@@ -259,6 +259,140 @@ function observeCancel(agent: Agent, callback: () => void): void {
   })
 }
 
+describe('one-shot local activations', () => {
+  it('delivers the final answer after a one-shot child reports progress to its parent', async () => {
+    const progress = 'Still checking the evidence.'
+    const final = 'The completed investigation found the answer.'
+    const { ctx, parent } = await setup([
+      toolCallResponse('progress-call', 'send_message', { agent_id: 'parent', message: progress }),
+      textResponse(final),
+    ])
+    parkParent(ctx, parent)
+    await ctx.plugin(SubagentControl)
+    const inserted: Array<{ kind: string; text: string }> = []
+    ctx.on('agent/inbox/inserted', ({ agent, message: item }) => {
+      if (agent === parent) inserted.push({ kind: item.source.kind,
+        text: item.content.flatMap(block => block.type === 'text' ? [block.text] : []).join('\n') })
+    })
+    try {
+      const started = await ctx.subagents.startActivation({ ...startSpec(parent), delivery: 'parent', oneShot: true })
+      await expect(started.result).resolves.toMatchObject({ stopReason: 'completed', output: message(final) })
+      expect(inserted.find(item => item.kind === 'agent-message')?.text).toContain(progress)
+      expect(inserted.find(item => item.kind === 'subagent-settled')?.text).toContain(final)
+      expect(inserted.find(item => item.kind === 'subagent-settled')!.text).not.toContain('its closing message is omitted')
+      expect(ctx.agents.get(started.childId)).toBeUndefined()
+      await expect(ctx.subagents.sendMessage(parent, started.childId, message('continue'), { signal: testSignal }))
+        .rejects.toMatchObject({ code: 'NOT_RESUMABLE' })
+    } finally {
+      await ctx.fiber.dispose()
+    }
+  })
+
+  it.each(['caller', 'parent'] as const)('keeps %s-delivered children one-shot while resident and after settlement', async (delivery) => {
+    const release = Promise.withResolvers<undefined>()
+    const adapter = new GatedAdapter([{ chunks: textResponse('one-shot answer'), gate: release.promise }])
+    const { ctx, parent } = await setupWith(adapter)
+    parkParent(ctx, parent)
+    await ctx.plugin(SubagentControl)
+    const settlements: string[] = []
+    ctx.on('agent/inbox/inserted', ({ agent, message }) => {
+      if (agent === parent && message.source.kind === 'subagent-settled') settlements.push(message.source.summary)
+    })
+    try {
+      const started = await ctx.subagents.startActivation({ ...startSpec(parent), delivery, oneShot: true })
+      await vi.waitFor(() => { expect(adapter.requests).toHaveLength(1) })
+      const child = ctx.agents.get(started.childId)!
+      expect(child.session.snapshotEvents().find(event => event.type === 'subagent/descriptor')?.data).toEqual({
+        version: SUBAGENT_DESCRIPTOR_VERSION,
+        mode: 'one-shot',
+        provider: 'spawn',
+        label: 'child task',
+      })
+      expect(child.session.snapshotEvents().flatMap(event =>
+        event.type === 'user/message' && event.data.source.kind !== 'runtime-context' ? event.data.content : [],
+      )).toEqual(message('child task'))
+      expect(await ctx.subagents.listChildren(parent.id)).toMatchObject([{ id: started.childId, mode: 'one-shot' }])
+      await expect(queuePrompt(ctx, parent, started.childId, message('queued follow-up')))
+        .rejects.toMatchObject({ code: 'NOT_CONTINUABLE' })
+      await expect(ctx.subagents.sendMessage(parent, started.childId, message('steering follow-up'), { signal: testSignal }))
+        .rejects.toMatchObject({ code: 'NOT_CONTINUABLE' })
+      await expect(humanPrompt(ctx, parent, started.childId, 'human follow-up', 'steer'))
+        .rejects.toMatchObject({ code: 'subagent/not-resumable' })
+      release.resolve(undefined)
+      await expect(started.result).resolves.toMatchObject({
+        stopReason: 'completed',
+        output: [{ type: 'text', text: 'one-shot answer' }],
+      })
+      expect(settlements).toEqual(delivery === 'parent'
+        ? [`Background subagent ${started.childId} finished. It cannot receive follow-up messages.`]
+        : [])
+      expect(ctx.agents.get(started.childId)).toBeUndefined()
+      await expect(queuePrompt(ctx, parent, started.childId, message('cold follow-up')))
+        .rejects.toMatchObject({ code: 'NOT_RESUMABLE' })
+      expect(adapter.requests).toHaveLength(1)
+    } finally {
+      release.resolve(undefined)
+      await ctx.fiber.dispose()
+    }
+  })
+
+  it('refuses a persisted one-shot child after a fresh runtime reload', async () => {
+    const { ctx, parent, root } = await setup([textResponse('persisted answer')])
+    const fresh = new Context()
+    try {
+      const started = await ctx.subagents.startActivation({ ...startSpec(parent), delivery: 'caller', oneShot: true })
+      await expect(started.result).resolves.toMatchObject({ stopReason: 'completed' })
+      await ctx.sessions.flush(parent.session)
+      const stored = await loadStoredSession(ctx.sessionPersistence, started.childId)
+      expect(stored.events.find(event => event.type === 'subagent/descriptor')?.data).toMatchObject({ mode: 'one-shot' })
+      await ctx.fiber.dispose()
+
+      await mountAgentLoopTestDependencies(fresh)
+      await fresh.plugin(JsonlSessionPersistence, { root: root! })
+      await fresh.plugin(AgentLoop, { agents: [] })
+      await fresh.plugin(TestSessionQuery)
+      await mountWorkingDirectoryFixture(fresh)
+      await fresh.plugin(SubagentRuntime)
+      await fresh.plugin(SubagentSpawn, { providerName: 'spawn' })
+      const adapter = new MockAdapter([])
+      fresh.llm.registerAdapter(['mock'], adapter)
+      const resumedParent = (await fresh.agents.resume({
+        resumeSessionId: parent.id,
+        agentOptions: { provider: 'mock', model: 'mock' },
+      })).agent
+      expect(await fresh.subagents.listChildren(resumedParent.id)).toMatchObject([{ id: started.childId, mode: 'one-shot' }])
+      await expect(queuePrompt(fresh, resumedParent, started.childId, message('after reload')))
+        .rejects.toMatchObject({ code: 'NOT_RESUMABLE' })
+      await expect(fresh.subagents.sendMessage(resumedParent, started.childId, message('after reload'), { signal: testSignal }))
+        .rejects.toMatchObject({ code: 'NOT_RESUMABLE' })
+      expect(fresh.agents.get(started.childId)).toBeUndefined()
+      expect(adapter.requests).toEqual([])
+    } finally {
+      await fresh.fiber.dispose()
+      await ctx.fiber.dispose()
+    }
+  })
+
+  it.each([undefined, false])('keeps oneShot=%s children continuable', async (oneShot) => {
+    const { ctx, parent, adapter } = await setup([textResponse('initial answer'), textResponse('continued answer')])
+    try {
+      const started = await ctx.subagents.startActivation({
+        ...startSpec(parent), delivery: 'caller', ...oneShot === undefined ? {} : { oneShot },
+      })
+      await started.result
+      expect(await ctx.subagents.listChildren(parent.id)).toMatchObject([{ id: started.childId, mode: 'continuable' }])
+      parkParent(ctx, parent)
+      await expect(queuePrompt(ctx, parent, started.childId, message('continue'))).resolves.toBeTypeOf('string')
+      await waitNoActivation(ctx, started.childId)
+      expect(adapter.requests).toHaveLength(2)
+      const stored = await loadStoredSession(ctx.sessionPersistence, started.childId)
+      expect(hasAssistantText(stored.events, 'continued answer')).toBe(true)
+    } finally {
+      await ctx.fiber.dispose()
+    }
+  })
+})
+
 describe('continuable activation capacity', () => {
   it.each([0, -1, 1.5, Number.MAX_SAFE_INTEGER + 1])('rejects invalid configured capacity %s', async (maxActiveSubagents) => {
     const ctx = new Context()

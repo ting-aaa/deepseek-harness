@@ -40,7 +40,7 @@ type SandboxEnforcement = 'full' | 'partial'
 
 ## Per-call policy
 
-The complete execution policy is resolved and carried per capability call. It includes `danger-full-access` so a consumer can resolve policy once before deciding whether to bypass confinement. Normal tool calls derive `workspaceRoot` from the calling session's immutable cwd; deployment configuration supplies the agentless fallback and explicit additional write grants. The resolver preserves absolute execution-world spelling. Enforcing providers canonicalize the root where the files exist, so a cwd containing `symlink/..` identifies the directory where the paired subprocess provider actually runs.
+The complete execution policy is resolved and carried per capability call. It includes `danger-full-access` so a consumer can resolve policy once before deciding whether to bypass confinement. Normal tool calls derive `workspaceRoot` from the last logged isolated root or the immutable session cwd; deployment configuration supplies the agentless fallback and explicit additional write grants. The resolver preserves absolute execution-world spelling. Enforcing providers canonicalize the root where the files exist, so a cwd containing `symlink/..` identifies the directory where the paired subprocess provider actually runs.
 
 ```ts type-equiv
 /**
@@ -76,7 +76,7 @@ interface SandboxExecutionPolicy {
 ```ts type-equiv
 /** Inputs that select the sandbox policy for one capability call. */
 interface SandboxPolicyRequest {
-  /** Calling session; its immutable cwd becomes the workspace boundary. */
+  /** Calling session; its logged isolated root or immutable cwd supplies the writable workspace. */
   session?: Session
   /** Explicit approved mode override, which outranks session policy. */
   mode?: SandboxMode
@@ -206,9 +206,9 @@ The sandbox-policy service (`ctx.sandboxPolicy`). Owns the deployment default mo
 /**
  * Resolve the complete policy for one capability call. An approved explicit
  * mode outranks the session's last `sandbox/mode` event, which outranks the
- * deployment default. A session cwd is its workspace-write boundary; the
- * configured root is the fallback for agentless calls and sessions without a
- * cwd.
+ * deployment default. The last sandbox/workspace-root event overrides the
+ * immutable session cwd for isolated executions. The configured root is the
+ * fallback for agentless calls and sessions without a cwd.
  * @param request - optional session and approved mode override.
  * @returns the fully resolved per-call mode and absolute workspace root.
  */
@@ -220,6 +220,13 @@ resolve(request: SandboxPolicyRequest = {}): SandboxExecutionPolicy
  * @returns the last logged mode, or `undefined` without one.
  */
 overrideOf(session: Session): SandboxMode | undefined
+
+/**
+ * Set the writable workspace for an isolated Session before its first confined call.
+ * @param session - Session whose subsequent sandbox calls use this directory.
+ * @param root - Absolute directory owned by the isolated execution.
+ */
+setWorkspaceRoot(session: Session, root: string): void
 ```
 
 Types: [Session](session.md)

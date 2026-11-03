@@ -33,6 +33,8 @@ The subagent package family lets an agent delegate a task to a child, continue t
 | [`subagent-dsh-sdk/`](subagent-dsh-sdk/README.md) | Runs an out-of-process Harness child through the TypeScript SDK | registers on `ctx.subagents` |
 | [`tool-subagent/`](tool-subagent/README.md) | Exposes delegation to the model | registers on `ctx.tools` |
 | [`tool-subagent-control/`](tool-subagent-control/README.md) | Exposes adjacent-agent messaging, interrupt, and listing to the model | registers on `ctx.tools` |
+| [`harness2/`](harness2/README.md) | Compares bounded candidate harnesses and retains explicitly accepted domain lessons | `ctx.harness2` |
+| [`tool-harness2/`](tool-harness2/README.md) | Exposes Harness² preview and explicit lesson adoption | registers on `ctx.tools` |
 
 -----
 
@@ -40,6 +42,7 @@ The subagent package family lets an agent delegate a task to a child, continue t
 ## Related documentation
 
 - [Subagent subsystem](../../docs/subsystems/subagent.md) — the service contract, provider contract, and terminal result semantics.
+- [Harness² subsystem](../../docs/subsystems/harness2.md) — refinement runs, child execution, and lesson ownership.
 - [historical Subagent capability seam](../../.agents/notes/archived/feature/2026-06-21-subagent-capability-seam.md) — the design record for the delegation capability family.
 - [Continuable subagents](../../.agents/notes/implemented/feature/2026-07-28-continuable-subagent-conversations.md) — durable children that accept follow-up turns.
 - [tool-subagent-control README](tool-subagent-control/README.md) — the follow-up, interrupt, and listing surface.

@@ -66,6 +66,23 @@ export function topLevelHelpArgs(profiles: readonly string[]): string[][] {
   return [[], ['plugin'], ...[...profiles].sort().flatMap(profile => [[profile], ['--profile', profile]])]
 }
 
+/**
+ * Resolve the help subprocess budget before allocating temporary resources.
+ * @param environment - Help-specific override, aggregate-gate fallback, and repository default environment.
+ * @returns A positive worker count; DSH_CLI_HELP_CONCURRENCY takes precedence over DSH_GATE_CONCURRENCY.
+ * @throws When the selected override is not a canonical positive integer.
+ */
+export function cliHelpConcurrency(environment: NodeJS.ProcessEnv = process.env): number {
+  const variable = environment.DSH_CLI_HELP_CONCURRENCY === undefined ? 'DSH_GATE_CONCURRENCY' : 'DSH_CLI_HELP_CONCURRENCY'
+  const raw = environment[variable]
+  if (raw === undefined) return defaultParallelism(environment)
+  const value = Number.parseInt(raw, 10)
+  if (!Number.isSafeInteger(value) || value < 1 || String(value) !== raw) {
+    throw new Error(`gen-cli-help: ${variable} must be a positive integer, got ${JSON.stringify(raw)}`)
+  }
+  return value
+}
+
 /** Help reads started ahead of an in-order consumer. */
 export interface PrefetchedHelpReader {
   /**
@@ -177,6 +194,7 @@ export async function collectCliHelp(
 }
 
 async function collectHelp(): Promise<HelpPage[]> {
+  const concurrency = cliHelpConcurrency()
   const directory = mkdtempSync(join(tmpdir(), 'dsh-cli-help-'))
   const profiles = Object.keys(PROFILE_TEMPLATES)
   // Concurrent profile boots share the repository worker budget.
@@ -207,7 +225,7 @@ async function collectHelp(): Promise<HelpPage[]> {
     } finally {
       signal.removeEventListener('abort', abort)
     }
-  }, topLevelHelpArgs(profiles), defaultParallelism())
+  }, topLevelHelpArgs(profiles), concurrency)
   try {
     return await collectCliHelp(reader.readHelp, profiles)
   } finally {
