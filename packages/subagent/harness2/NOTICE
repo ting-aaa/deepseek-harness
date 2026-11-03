@@ -17,3 +17,7 @@ See LICENSE for both license texts and their scope.
 Source mapping:
   harness2/core/recursion.py -> src/schedule.ts
   harness2/core/tree.py -> src/candidate.ts
+  harness2/core/prompts.py -> src/editor-prompts.ts
+
+Prompt modifications: DSH tool and artifact names, lower-trust evidence framing,
+file-edit result schemas, and a final-candidate-only selector.

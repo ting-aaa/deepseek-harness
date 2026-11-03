@@ -1,4 +1,4 @@
-/** Read-only task capabilities captured from one initiating parent; speculative children never apply changes. @module */
+/** Task capabilities captured from one initiating parent and installed under the child's execution policy. @module */
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import type { ToolActivationContext, ToolDefinition } from '@deepseek-ai/dsh-tools'
 
@@ -6,6 +6,9 @@ import type { ToolActivationContext, ToolDefinition } from '@deepseek-ai/dsh-too
 export const READ_ONLY_TASK_TOOLS = ['read', 'read_image', 'glob', 'grep', 'web_search', 'web_fetch'] as const
 /** Deployment may select a subset of the supported read-only task operations. */
 export type ReadOnlyTaskTool = typeof READ_ONLY_TASK_TOOLS[number]
+
+/** Coding operations whose effects can be confined to an independent workspace copy. */
+export const WORKSPACE_TASK_TOOLS = [...READ_ONLY_TASK_TOOLS, 'write', 'edit', 'apply_patch', 'bash', 'pwsh', 'skill'] as const
 
 /** One run's fixed tool definitions and exact live initiating parent. */
 export class TaskToolAuthority {
@@ -21,7 +24,7 @@ export class TaskToolAuthority {
    * @param signal - Cancels conditional admission before any tools are installed.
    * @returns Fixed authority whose live revocations are checked at every step and dispatch.
    */
-  static async capture(parent: Agent, names: readonly ReadOnlyTaskTool[], signal: AbortSignal): Promise<TaskToolAuthority> {
+  static async capture(parent: Agent, names: readonly string[], signal: AbortSignal): Promise<TaskToolAuthority> {
     const tools = parent.ctx.tools
     const snapshot = new Map(names.flatMap((name) => {
       const definition = tools.get(name, parent)
@@ -39,7 +42,7 @@ export class TaskToolAuthority {
   }
 
   /**
-   * Install scoped read-only definitions, preserving parent revocations, identity and guards.
+   * Install scoped task definitions, preserving parent revocations, identity and guards.
    * The normal child pipeline still enforces its delegated permission and never-approval policy.
    * @param child - Solver child owning these registrations and their disposal.
    * @returns Names available to the engine's final capability guard.

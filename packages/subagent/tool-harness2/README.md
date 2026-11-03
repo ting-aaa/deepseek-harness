@@ -36,7 +36,7 @@ Full base-backed DSH profiles include the tools with their [engine](../harness2/
 
 `harness2` accepts a complete `task`, stable `domain`, and optional `mode`, `k`, and `resumeRunId`. `k` cannot exceed deployment limits; resume requires the same parent and run fingerprint. Results include the selected answer, candidate tree, all finals, reflection, and stage references. The tool cannot raise budgets or authorize code execution. Show the preview before asking whether to retain it.
 
-Answer rollouts and their candidate delegates may inspect inputs with the configured read-only tools captured from the initiating parent; proposal and review stages receive no parent task tools. Speculative stages cannot use parent shell, write, edit, or change-application tools. After reviewing the selected result, the parent can apply changes through its ordinary tool and permission flow. Previewing and remembering do not apply changes.
+Answer rollouts use coding tools in independent workspace copies after approval when enforcing providers are available; the result reports read-only fallback otherwise. File editors can change only the candidate harness, and reviewers can read stage evidence. `harness2_apply` accepts the original `runId`, requires separate approval, checks the selected patch against the current originating workspace, and returns `{applied}`. Previewing and remembering do not apply changes; the [engine reference](../harness2/README.md) owns confinement and interruption limits.
 
 `harness2_remember` accepts the approved `runId` and returns the committed library `revision`. The preview must be retained and owned by the current parent Session; an intervening domain update requires a fresh preview. The [service reference](../harness2/README.md) owns budgets, cancellation, retention, and storage semantics.
 
@@ -54,9 +54,9 @@ A preview does not require the user to name Harness². Generated execution still
 <details>
 <summary>Implementation internals — click to expand</summary>
 
-The consumer delegates preview execution to `ctx.harness2.run()` with the calling Agent and tool cancellation signal. The engine captures the parent-authorized read-only task tools, rechecks admission at each child step, and checks definition identity and parent guards at dispatch. Generated candidate execution requests approval from the initiating parent. Remembering delegates to `ctx.harness2.remember()` with cancellation and the tool-call identifier; the service owns the approval request. The engine, not schema filtering or prompt guidance, owns execution restrictions.
+The consumer delegates execution, patch application, adoption, and bindings to `ctx.harness2` with the calling Agent and cancellation signal. The service owns tool admission, live guards, confinement, approval, and persistence. The engine reference owns their failure behavior.
 
-Both tools use ordinary logged tool calls and results. Pure presenters use generic cards; the preview card shows the submitted task and the remember card shows the run identifier. [`src/index.ts`](src/index.ts) owns registration, schemas, delegation, and presentation.
+All tools use ordinary logged calls and results. Pure presenters use generic cards. [`src/index.ts`](src/index.ts) owns registration, schemas, delegation, and presentation.
 
 </details>
 
@@ -80,11 +80,11 @@ Read these pages for task preparation and engine-level guarantees.
 
 #### What the model sees
 
-The generated [Harness² tool schemas](../../../docs/tool-catalog.md#deepseek-aidsh-tool-harness2) define `harness2`, `harness2_remember`, `harness2_activate`, `harness2_deactivate`, and `harness2_status`, including bounded exploration and approval instructions. This package adds no system-prompt section; the [engine](../harness2/README.md#apply-adopted-guidance) adds the workspace overlay.
+The generated [Harness² tool schemas](../../../docs/tool-catalog.md#deepseek-aidsh-tool-harness2) define `harness2`, `harness2_apply`, `harness2_remember`, `harness2_activate`, `harness2_deactivate`, and `harness2_status`, including bounded exploration and approval instructions. This package adds no system-prompt section; the [engine](../harness2/README.md#apply-adopted-guidance) adds the workspace overlay.
 
 #### Token effect
 
-Two fixed tool schemas enter each request where the registration is visible. Task and domain arguments are retained with the tool call.
+The visible preview, apply, remember, activation, status, and deactivation schemas add fixed request context. Task, domain, and run identifiers remain in logged tool calls.
 
 #### KV Cache effect
 

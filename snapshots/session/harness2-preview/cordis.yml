@@ -8,6 +8,8 @@
 - id: optional-harness2
   config:
     provider: spawn
+    rollout: read-only
+    editor: json
     maxConcurrentChildren: 1
     childTimeoutMs: 30000
     maxStepsPerChild: 4

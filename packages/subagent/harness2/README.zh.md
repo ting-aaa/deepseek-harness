@@ -41,16 +41,21 @@ kind: "package-reference"
     maxK: 4
     runtime: { backend: wasi }
     maxConcurrentRuns: 1
-    childTimeoutMs: 120000
-    maxStepsPerChild: 4
-    maxTokensPerChild: 4096
+    childTimeoutMs: 900000
+    maxStepsPerChild: 40
+    maxTokensPerChild: 16384
 ```
 
-所选提供方必须支持新建本地托管子会话、结构化输出、agent 选项与深度限制。提供方缺失或不兼容时，会在子会话启动前失败。服务不会选择外部执行器，也不会调用上游 CLI（命令行界面）。
+所选提供方必须支持新建本地托管子会话、结构化输出、agent 选项与深度限制。工作区执行还需要 `subprocess`、`sandboxPolicy`、实施沙箱限制的 `fs`，以及提供 shell 工具时实施沙箱限制的 `shell`。缺少隔离能力、额外可写根目录、审批被拒或快照超限时，通过 `executorReason` 明确报告只读回退。服务不会调用上游 CLI。
 
 | 字段 | 默认值 | 含义 |
 |---|---|---|
 | `provider` | `spawn` | 托管新建子会话提供方。 |
+| `rollout` / `editor` | `workspace` / `filesystem` | 独立编码副本与基于文件的候选编辑；仍可显式使用 `read-only` / `json` 模式。 |
+| `scratchDirectory` | `~/.dsh/harness2-scratch` | 项目与共享操作系统临时目录之外的绝对路径。 |
+| `maxScratchBytes` / `maxScratchFiles` | `268435456` / `50000` | 源文件与收集文件上限；不是运行进程的磁盘配额。 |
+| `maxDiffBytes` | `2097152` | 补丁与 Git 文件列表输出上限。 |
+| `maxRolloutTokens` | `200000` | 每个子会话及其嵌套委派报告的输入加输出 token 上限，每次响应后检查。 |
 | `mode` | `parallel` | 并行或顺序递归。 |
 | `k` / `maxK` | `1` / `4` | 默认宽度／深度与调用方上限。 |
 | `maxCandidateFiles` | `64` | 候选文件数量上限。 |
@@ -65,19 +70,19 @@ kind: "package-reference"
 | `maxEvidenceChars` | `64000` | 完整子会话消息上限，包含固定文本与序列化证据。 |
 | `maxOutputChars` | `16000` | 答案字段长度上限。 |
 | `maxReflectionChars` | `8000` | 理由或反思字段长度上限。 |
-| `childTimeoutMs` | `120000` | 单个子会话超时，包含启动时间。 |
-| `maxStepsPerChild` | `4` | 每个子会话可接纳的模型步骤上限。 |
-| `maxTokensPerChild` | `4096` | 每次请求的输出 token 上限，不超过父会话上限。 |
+| `childTimeoutMs` | `900000` | 单个子会话超时，包含启动时间。 |
+| `maxStepsPerChild` | `40` | 每个子会话可接纳的模型步骤上限。 |
+| `maxTokensPerChild` | `16384` | 每次请求的输出 token 上限，不超过父会话上限。 |
 | `maxConcurrentRuns` | `1` | 并发预览上限。 |
 | `maxSavedRuns` | `50` | 接纳运行时保留的非活跃运行／检查点及提交时保留的预览数；活跃运行可暂时超过该数量。 |
 
 字符限制使用 JavaScript 字符串长度，不是字节数或 token 数。生成的[配置目录](../../../docs/config-catalog.zh.md#deepseek-aidsh-harness2)负责可接受字段与默认值。调用方不能通过模型工具提高这些限制。
 
-### 只读任务工具
+### 任务工具
 
-`readTools` 只能选择 `read`、`read_image`、`glob`、`grep`、`web_search` 和 `web_fetch`；其他名称会被拒绝，`[]` 禁用此访问。运行开始时，服务捕获发起父 Agent 当前可见且获准使用的工具定义。只有答案 rollout 及其候选子智能体委派会获得这些工具；提案、合成、选择和反思子会话只返回结构化输出，不获得父任务工具。
+`readTools` 从 `read`、`read_image`、`glob`、`grep`、`web_search` 和 `web_fetch` 中选择只读求解器工具。工作区求解器还可使用父 Agent 可见且获准的 `write`、`edit`、`apply_patch`、`bash`、`pwsh` 和 `skill`。文件编辑器使用 read/glob/grep/write/edit，并通过守卫限制写入候选目录；选择和反思使用配置的只读工具。运行开始时捕获父 Agent 可见的定义。
 
-每个子步骤重新检查准入；派发时重新检查捕获的定义身份和实时父 Agent 的工具守卫。子会话权限同样生效，且子会话不能请求扩大访问范围。推测阶段不会获得父 Agent 的 shell、写入、编辑或应用修改工具。审阅选中的预览后，父 Agent 可通过普通工具和权限流程应用修改。生成候选代码的执行请求会向发起父 Agent 请求审批，并展示准确的候选哈希、入口路径和 JSON 输入。
+每个子步骤重新检查准入；派发时重新检查定义身份和活跃父 Agent 的守卫。子会话的沙箱与禁止请求审批策略同时生效。生成候选代码会向父 Agent 请求审批，展示准确哈希、入口路径与 JSON 输入。选中补丁需要单独获得父会话批准。
 
 ### 候选能力
 
@@ -100,7 +105,7 @@ kind: "package-reference"
 
 `runtime: null` 禁用生成代码执行；隔离不可用时不会回退到宿主执行。仍支持显式的旧 Linux 运行时配置，但需要非 root bubblewrap 用户／网络命名空间、配置好的运行时路径与限制，以及部署方已验证的内存有界容器或 cgroup。该后端的虚拟地址空间上限不限制总 RSS 或内核内存。
 
-答案执行证据包含日志中的助手消息、工具调用／结果以及返回产物，受 `maxTrajectoryChars` 限制。提案和组合接收该轨迹；最终选择仅接收匿名的已完成答案。轨迹过长时保留最早和最新的事件，并标注省略的中间部分；不会因此中止运行。失败的答案执行保留失败前观察到的轨迹。
+工作区求解器在独立副本中使用捕获的父 Agent 编码工具，副本包含已跟踪及未被忽略的未跟踪文件，包括未提交内容。每个子会话记录可写根目录并使用 `workspace-write` 策略；父工作区与服务拥有的 Git 元数据位于该根目录之外。shell 与文件系统隔离限制写入，不隔离网络或全部读取。Git 忽略的依赖不复制；检查需要时应在副本中安装或提供。最终交付物包含答案与有界 Git 二进制补丁。`harness2_apply` 经单独批准后检查并应用选中补丁到原工作区；应用不是文件系统事务，中断后重试前应先检查工作区。
 
 ### 持久化与失败
 
@@ -108,7 +113,7 @@ kind: "package-reference"
 
 预览不会接受经验。单独的保存操作要求原始活跃父会话、审批答复方的一次性准许与当前经验库修订；[子系统参考](../../../docs/subsystems/harness2.zh.md#run-and-lesson-ownership)负责这些规则。领域标签去除两端空白、区分大小写，上限为 128 个字符。各领域共享配置的存储实例，不是工作区或用户授权作用域。每个模式／领域经验库保留最多 `maxLibraryEntries` 条显式接受的任务经验及完整候选树。`baseCandidate` 始终是固定基线；经验库作为独立改进证据，并为恢复保存快照。
 
-子会话证据在完整消息预算内优先保留整段先前反思，再接纳能放入完整序列化消息预算的最新完整历史经验，并保持其时间顺序。`libraryOmitted` 和 `priorReflectionOmitted` 报告省略的历史内容。这不会截断或删除已存经验。本次运行的证据单独就超出预算时，按执行证据、轨迹、答案的顺序，从最长的开始在中间截断，直到消息能放下；候选树从不截断。仍无法放下的消息会中止运行。
+默认文件编辑器移植上游提案、组合与经验提示词。编辑器在 `context/` 下读取任务文件、有界执行轨迹、交付物、完整已接受经验库，以及真实 DSH 系统提示词、工具 schema 和技能目录；只有 `context/harness/` 可编辑。不向编辑器提供 shell。回读会校验完整候选树；保持文件不变即 KEEP_BASE，空的可选文件或 DELETE 删除组件。反思保存 `cue`、`lesson`、`evidence` 和 JSON 编码的 `edits`；这些是模型判断，不是评分。选择器读取匿名最终答案及补丁。`editor: json` 使用内联有界证据；缺少实施限制的文件系统服务时回退为 JSON 编辑。
 
 无效候选树重试一次；两次均无效时继承当前候选并保留原因。失败的答案执行保留为错误证据供后续改进；所有最终候选均失败时不能产生成功预览。选择失败或返回未知答案时，返回第一个已完成的最终候选，并附 `selectionFallback`。取消及不可恢复的阶段或存储错误会停止运行。待处理的保存操作不计入 `maxConcurrentRuns`。持久阶段检查点允许同一父会话使用相同任务、领域、模式、k 与部署配置继续；这不是子会话冷恢复。取消与卸载会等待托管子会话停稳。最终写入开始后不能回滚；提交成功即返回成功。
 
@@ -139,7 +144,7 @@ kind: "package-reference"
 
 此包原生适配 [Harness²](https://github.com/google-research/harness2)，不调用其 Python 运行器。DSH 负责执行、权限、模型路由和持久化。[NOTICE](NOTICE)记录精确来源版本与源码映射，[LICENSE](LICENSE)保留 Google LLC 的 Apache-2.0 条款并区分原创 MIT 部分。此包不提供完整上游 API、基准执行器或质量提升等价承诺。
 
-托管一次性子会话保留 DSH 生命周期和 Session 日志，但拒绝后续消息与冷恢复。候选指令及已保存经验仍是低信任数据。答案 rollout 安装经校验的候选资源；它们与其候选委派会获得捕获的父任务已授权只读工具。提案与评审子会话只返回结构化输出。父会话配置和权限不被候选改写。[架构参考](../../../docs/subsystems/harness2.zh.md)负责组合与数据归属。
+托管一次性子会话保留 DSH 生命周期和 Session 日志，但拒绝后续消息与冷恢复。候选指令及已保存经验仍是低信任数据。求解器工具从活跃父 Agent 捕获，并在派发时重新检查；排除管理工具及无界后台委派。[架构参考](../../../docs/subsystems/harness2.zh.md)负责组合与数据归属。
 
 | 文件 | 职责 |
 |---|---|
@@ -173,7 +178,7 @@ kind: "package-reference"
 
 #### 模型看到的内容
 
-每个子会话收到一条新的用户消息，其中包含下方固定策略、调用方任务、一个阶段任务与以 JSON 引用的证据。不会注入父对话。答案 rollout 和候选委派另外只获得父任务范围内允许的、已捕获的只读工具。结构化输出提供方另行提供结果 schema 与捕获指令。
+每个子会话收到独立任务，不注入父对话。工作区求解器使用 [`src/prompts.ts`](src/prompts.ts) 中的工作区策略；文件编辑器接收 [`src/editor-prompts.ts`](src/editor-prompts.ts) 中的上游任务提示词并检查阶段文件。下文记录紧凑的 `read-only` / `json` 模式。结构化输出提供方另行提供结果 schema 与捕获指令。
 
 ##### 共享子会话策略
 
@@ -225,7 +230,7 @@ Choose the strongest final answer for the task from the anonymous alternatives. 
 
 #### Token 影响
 
-每次执行使用独立子会话上下文；数量随 `k`、重试和选择变化。固定策略与任务增加重复文本；完整子会话消息受 `maxEvidenceChars` 限制。`maxTokensPerChild` 限制单次请求输出，不限制总输入、整次运行 token 或金额。
+每次执行使用独立子会话。默认 k=1 搜索在重试前包含八个子活动；k>1 增加选择。`maxRolloutTokens` 在每次响应后限制子会话及嵌套委派报告的输入加输出，因此单次响应可能超限。缺少用量报告表示成本未知，不是免费执行。不承诺金额或整次搜索 token 上限。普通任务复用已激活修订不会重复搜索，但新增指导与资源仍消耗上下文 token。
 
 #### KV Cache 影响
 
@@ -238,8 +243,8 @@ Choose the strongest final answer for the task from the anonymous alternatives. 
 这些约束定义所支持的实验，不构成通用自修改 agent。
 
 - **原生适配，不是上游运行器** — 不承诺上游 CLI、全部插件 API、基准测试或独立评估器等价。
-- **有界工作量不是价格预算** — 没有总 token 或金额上限；清理可能超出子会话超时时间。
-- **显式采纳与激活，不是自动改进** — 已接受材料只能经批准的工作区绑定作用于普通 Agent；全局配置保持不变，也不衡量绑定是否有帮助。
+- **报告用量限制** — 逐子会话检查允许单次响应超限；没有整次搜索金额上限。清理可能超过子会话截止时间。
+- **显式采纳与激活** — 普通 Agent 仅在批准工作区绑定后使用指导。[评估运行器](evaluation/README.zh.md)比较留出交付物；采纳本身不保证质量提升。
 - **共享领域经验库** — 领域标签不提供租户隔离；修订可按工作区列出与回滚，但没有遗忘操作或领域数量保留策略。
 - **检查点恢复有条件** — 只能复用相同父会话和运行指纹的阶段；不能恢复子会话或回滚外部操作。
 

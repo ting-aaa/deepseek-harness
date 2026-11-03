@@ -25,6 +25,7 @@ export interface Rollout<T> {
   readonly answer: string
   readonly error?: string | undefined
   readonly trajectory?: string | undefined
+  readonly changes?: string | undefined
 }
 
 /** Shared baseline evidence and the candidate history available to an improvement stage. */

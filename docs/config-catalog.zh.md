@@ -1625,11 +1625,25 @@ export interface Config {
 ## `@deepseek-ai/dsh-harness2`
 
 - `inject`: `agents` · `subagents` · `tools` · `storageDomain` · `approval` · `workingDirectory` · `sessionProjections` · `systemPrompt` · `skills`
-- `source`: [`packages/subagent/harness2/src/index.ts:51`](../packages/subagent/harness2/src/index.ts)
+- `source`: [`packages/subagent/harness2/src/index.ts:63`](../packages/subagent/harness2/src/index.ts)
 
 ```ts config-catalog
 /** Deployment-owned budgets; the tools cannot raise any of these limits. */
 export interface Config {
+  /** File-based upstream editing, or compact JSON-tree authoring for smaller compositions. */
+  editor?: 'filesystem' | 'json'
+  /** Default workspace execution requires a confining filesystem and shell; unavailable capabilities use read-only execution. */
+  rollout?: 'workspace' | 'read-only'
+  /** Absolute scratch parent outside the source workspace and shared OS temporary directories. */
+  scratchDirectory?: string
+  /** Maximum source bytes copied for one run. */
+  maxScratchBytes?: number
+  /** Maximum source files copied for one run. */
+  maxScratchFiles?: number
+  /** Maximum patch and Git-listing bytes retained per command. */
+  maxDiffBytes?: number
+  /** Provider-reported total input and output tokens per child, shared with its nested delegates. */
+  maxRolloutTokens?: number
   /** Fresh, local, structured-output subagent provider; defaults to spawn. */
   provider?: string
   /** Default recursion mode, overridable within the configured k budget. */
@@ -1646,7 +1660,7 @@ export interface Config {
   maxCandidateBytes?: number
   /** Portable WASI execution by default; explicit Linux namespace configuration remains supported. Null disables executable candidates. */
   runtime?: WasiRuntimeConfig | IsolatedRuntimeConfig | null
-  /** Read-only DSH task tools borrowed from the initiating parent; never shell, writes, or application. */
+  /** Read-only solver/reviewer subset; workspace solvers additionally admit the fixed coding-tool allowlist. */
   readTools?: ReadOnlyTaskTool[]
   /** Retained full-tree experiences per domain. */
   maxLibraryEntries?: number
@@ -1666,11 +1680,11 @@ export interface Config {
   maxOutputChars?: number
   /** Maximum rationale or reflection characters; defaults to 8000. */
   maxReflectionChars?: number
-  /** Wall-clock milliseconds per child, including startup; defaults to 120000. */
+  /** Wall-clock milliseconds per child, including startup; defaults to 900000. */
   childTimeoutMs?: number
-  /** Maximum admitted steps per child; defaults to 4. */
+  /** Maximum admitted steps per child; defaults to 40. */
   maxStepsPerChild?: number
-  /** Per-request output-token cap; defaults to 4096, never raises the parent's cap. */
+  /** Per-request output-token cap; defaults to 16384, never raises the parent's cap. */
   maxTokensPerChild?: number
   /** Concurrent preview ceiling; defaults to 1. */
   maxConcurrentRuns?: number

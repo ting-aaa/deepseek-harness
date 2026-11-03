@@ -55,6 +55,18 @@
     },
     {
       "path": "../../session/session-projection"
+    },
+    {
+      "path": "../../subprocess/subprocess"
+    },
+    {
+      "path": "../../sandbox/sandbox-policy"
+    },
+    {
+      "path": "../../shell/shell"
+    },
+    {
+      "path": "../../fs/fs"
     }
   ]
 }

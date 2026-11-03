@@ -43,7 +43,8 @@ it('reads actual task files while speculative write, shell and proposal-tool cal
   expect(JSON.stringify(read)).toContain('ACTUAL_TASK_SOURCE_42')
   expect(baseline.some(event => event.type === 'tool/result' && event.data.message.toolCallId === 'write-attempt' && event.data.message.isError)).toBe(true)
   expect(baseline.some(event => event.type === 'tool/result' && event.data.message.toolCallId === 'shell-attempt' && event.data.message.isError)).toBe(true)
-  const proposal = events.get(result.stages.find(stage => stage.phase === 'invariant')!.sessionId)!
+  const proposal = result.stages.filter(stage => stage.phase === 'invariant' || stage.phase === 'domain')
+    .flatMap(stage => events.get(stage.sessionId)!)
   expect(proposal.some(event => event.type === 'tool/result' && event.data.message.toolCallId === 'proposal-read-attempt' && event.data.message.isError)).toBe(true)
   expect(adapter.requests[0]?.tools?.map(tool => tool.name).sort()).toEqual(['read', 'structured_output'])
   expect(adapter.requests.every(request => !request.tools?.some(tool => tool.name === 'bash' || tool.name === 'write' || tool.name === 'edit'))).toBe(true)

@@ -8,19 +8,27 @@ const stage = z.object({
 }).strict()
 
 const tree = z.record(z.string(), z.string())
+/** Provider-reported usage; absent reports contribute zero reported tokens. */
+export const usageSchema = z.object({ inputTokens: z.number().int().nonnegative(), outputTokens: z.number().int().nonnegative() }).strict()
+const reflection = z.object({ cue: z.string(), lesson: z.string(), evidence: z.string(), edits: z.string() }).strict()
 
 const preview = z.object({
   contentHash: z.string(), runId: z.string(), parentSession: z.string(), domain: z.string(), task: z.string(),
   baseRevision: z.number().int().nonnegative(), createdAt: z.number().int().nonnegative(),
   answer: z.string(), instructions: z.string(), reflection: z.string(), stages: z.array(stage),
   candidate: tree, mode: z.enum(['parallel', 'sequential']), k: z.number().int().positive(),
+  executor: z.enum(['workspace', 'read-only']).optional(), executorReason: z.string().optional(), workspace: z.string().optional(),
+  usage: usageSchema.optional(),
+  editor: z.enum(['filesystem', 'json']).optional(), lesson: reflection.optional(),
   selected: z.string(), selectionFallback: z.string().optional(), finals: z.array(z.object({
     label: z.string(), answer: z.string(), candidate: tree, error: z.string().optional(), trajectory: z.string().optional(),
+    changes: z.string().optional(),
   }).strict()),
 }).strict()
 
 const experience = z.object({
   runId: z.string(), task: z.string(), candidate: tree, reflection: z.string(), selected: z.string(),
+  cue: z.string().optional(), evidence: z.string().optional(), edits: z.string().optional(),
 }).strict()
 
 const lesson = z.object({
@@ -50,9 +58,9 @@ const binding = z.object({
   workspace: z.string(), domain: z.string(), mode, revision: z.number().int().positive(), boundAt: z.number().int().nonnegative(),
 }).strict()
 
-/** The library is plugin-owned state, separate from released Session data. Version 3 adds revision history and workspace bindings. */
+/** Plugin-owned library; version 4 admits version 2/3 rows and retains optional workspace artifacts and structured experience. */
 export const librarySpec = defineDomain({
-  name: 'harness2', version: 3, compatibleVersions: [2],
+  name: 'harness2', version: 4, compatibleVersions: [2, 3],
   tables: {
     previews: domainTable(preview), lessons: domainTable(lesson), runs: domainTable(run), checkpoints: domainTable(checkpoint),
     revisions: domainTable(revision), bindings: domainTable(binding),

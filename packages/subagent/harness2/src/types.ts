@@ -36,6 +36,15 @@ export interface Harness2Result {
   readonly mode: 'parallel' | 'sequential'
   readonly k: number
   readonly selected: string
+  /** Actual solver mode; a missing sandbox or refused workspace grant is reported in executorReason. */
+  readonly executor?: 'workspace' | 'read-only' | undefined
+  readonly executorReason?: string | undefined
+  readonly editor?: 'filesystem' | 'json' | undefined
+  readonly workspace?: string | undefined
+  /** Sum of provider usage reports across newly executed and reused stage checkpoints. */
+  readonly usage?: { inputTokens: number; outputTokens: number } | undefined
+  /** Evidence-supported improvement experience, present for the filesystem editor. */
+  readonly lesson?: { cue: string; lesson: string; evidence: string; edits: string } | undefined
   /** Present when selection failed and the first delivered final stands in. */
   readonly selectionFallback?: string | undefined
   readonly finals: readonly {
@@ -44,6 +53,7 @@ export interface Harness2Result {
     candidate: CandidateTree
     error?: string | undefined
     trajectory?: string | undefined
+    changes?: string | undefined
   }[]
   readonly stages: readonly Harness2Stage[]
 }

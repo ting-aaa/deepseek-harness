@@ -24,6 +24,11 @@ import type { SandboxMode } from '@deepseek-ai/dsh-sandbox'
 declare module '@deepseek-ai/dsh-session/types' {
   interface SessionEventMap {
     /**
+     * Explicit per-Session writable workspace root; older readers must refuse this event.
+     * @param root - Absolute execution-world directory used by subsequent confined calls.
+     */
+    'sandbox/workspace-root': { root: string }
+    /**
      * The session's sandbox mode was switched — log-only (like `approval/*`;
      * NOT a surface event, carries no `surfaceOp`): durable and replayable,
      * never in the model transcript. The LAST such event is the session's

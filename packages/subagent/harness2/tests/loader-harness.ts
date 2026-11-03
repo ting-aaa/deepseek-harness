@@ -10,6 +10,13 @@ import { boot, loadOverlayPatches } from '@deepseek-ai/dsh-app-boot'
 import Agents from '@deepseek-ai/dsh-agent'
 import AgentLoop from '@deepseek-ai/dsh-agent-loop'
 import FsLocal from '@deepseek-ai/dsh-fs-local'
+import FsSandbox from '@deepseek-ai/dsh-fs-sandbox'
+import SandboxPolicy from '@deepseek-ai/dsh-sandbox-policy'
+import SubprocessLocal from '@deepseek-ai/dsh-subprocess-local'
+import SandboxLocal from '@deepseek-ai/dsh-sandbox-local'
+import PwshSandbox from '@deepseek-ai/dsh-pwsh-sandbox'
+import * as ToolPwsh from '@deepseek-ai/dsh-tool-pwsh'
+import * as ShellEnv from '@deepseek-ai/dsh-shell-env'
 import * as ToolFs from '@deepseek-ai/dsh-tool-fs'
 import Llm from '@deepseek-ai/dsh-llm'
 import type { LlmAdapter } from '@deepseek-ai/dsh-llm'
@@ -35,7 +42,9 @@ import type { Config } from '../src/index.ts'
 /** Boot a temporary Cordis file using production modules, then create its exact live parent. */
 export async function bootHarness(
   model: LlmAdapter, config: Config = {}, bundle = false, subagentConfig: { maxDepth?: number } = {}, taskFiles = false,
+  workspace: boolean | 'shell' = false,
 ) {
+  config = { rollout: 'read-only', editor: 'json', ...config }
   const root = await mkdtemp(join(tmpdir(), 'dsh-harness2-loader-'))
   let owner: Context | undefined
   onTestFinished(async () => {
@@ -46,17 +55,20 @@ export async function bootHarness(
   const configPath = join(root, 'cordis.yml')
   const modules = {
     sessions: Sessions, projections: Projections, llm: Llm, systemPrompt: SystemPrompt,
-    tools: Tools, executor: Executor, agents: Agents, loop: AgentLoop, fs: FsLocal,
+    tools: Tools, executor: Executor, agents: Agents, loop: AgentLoop, fs: workspace ? FsSandbox : FsLocal,
     workingDirectory: WorkingDirectory, persistence: Persistence, subagents: Subagents,
     spawn: Spawn, storage: Storage, storageSqlite: StorageSqlite, storageDomain: StorageDomain,
     approval: Approval, skills: Skills, harness2: Harness2,
     ...taskFiles ? { taskFiles: ToolFs } : {},
+    ...workspace ? { sandboxPolicy: SandboxPolicy, subprocess: SubprocessLocal } : {},
+    ...workspace === 'shell' ? { sandbox: SandboxLocal, shell: PwshSandbox, toolPwsh: ToolPwsh, shellEnv: ShellEnv } : {},
   }
   const configs: Record<string, object> = {
     subagents: subagentConfig, loop: { agents: [] }, workingDirectory: { defaultDirectory: root },
     persistence: { root: join(root, 'sessions'), compression: 'none' },
     storageSqlite: { path }, storageDomain: { backend: 'sqlite' }, harness2: config,
     taskFiles: { readImage: false },
+    sandboxPolicy: { mode: 'danger-full-access', workspaceRoot: root },
   }
   await writeFile(configPath, JSON.stringify(Object.keys(modules).filter(id => !bundle || id !== 'harness2').map(id => ({
     id, name: `cordis:${id}`, ...configs[id] === undefined ? {} : { config: configs[id] },

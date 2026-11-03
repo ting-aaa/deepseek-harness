@@ -95,6 +95,15 @@ interface Harness2Result {
   readonly mode: 'parallel' | 'sequential'
   readonly k: number
   readonly selected: string
+  /** Actual solver mode; a missing sandbox or refused workspace grant is reported in executorReason. */
+  readonly executor?: 'workspace' | 'read-only' | undefined
+  readonly executorReason?: string | undefined
+  readonly editor?: 'filesystem' | 'json' | undefined
+  readonly workspace?: string | undefined
+  /** Sum of provider usage reports across newly executed and reused stage checkpoints. */
+  readonly usage?: { inputTokens: number; outputTokens: number } | undefined
+  /** Evidence-supported improvement experience, present for the filesystem editor. */
+  readonly lesson?: { cue: string; lesson: string; evidence: string; edits: string } | undefined
   /** Present when selection failed and the first delivered final stands in. */
   readonly selectionFallback?: string | undefined
   readonly finals: readonly {
@@ -103,6 +112,7 @@ interface Harness2Result {
     candidate: CandidateTree
     error?: string | undefined
     trajectory?: string | undefined
+    changes?: string | undefined
   }[]
   readonly stages: readonly Harness2Stage[]
 }
@@ -127,9 +137,9 @@ interface Harness2Binding {
 }
 ```
 
-Proposals, probe reports, and saved lessons remain lower-trust model outputs, not replacements for host policy. Answer rollouts install validated native candidate resources; they and their candidate delegates receive configured read-only task tools captured from the initiating parent. The default task-tool allowlist is `read`, `read_image`, `glob`, `grep`, `web_search`, and `web_fetch`; only a subset is accepted, and `readTools: []` disables it. Proposal, composition, selection, and reflection stages receive no parent task tools. Admission is rechecked at each child step; dispatch also checks captured definition identity and the live parent’s guards. Speculative stages receive no parent shell, write, edit, or change-application tools. Scripts and middleware use the built-in portable WASI runtime and require per-execution approval addressed to the initiating parent; `runtime: null` disables them. The [package reference](../../packages/subagent/harness2/README.md#use-this-package) owns the complete capabilities and limits.
+Proposals, probe reports, and saved lessons remain lower-trust model outputs. The [package reference](../../packages/subagent/harness2/README.md#use-this-package) defines workspace coding tools, file-edit restrictions, fallback modes, isolated generated execution, and budgets. Tool admission rechecks captured definitions and live parent guards. A child’s logged `sandbox/workspace-root` fixes its private writable copy independently of its immutable Session origin.
 
-Fresh child contexts do not inherit the parent conversation. The caller must supply task material or input references accessible through the admitted read-only tools. After reviewing a selected preview, the parent applies any desired changes separately through its ordinary tool loop and permissions. Stored evidence and model assessments are not independent verification of correctness or task completion.
+Fresh child contexts do not inherit the parent conversation. File editors receive real DSH prompt and tool references plus bounded execution evidence. Applying a selected patch, remembering a lesson, and binding a revision are separate approved operations. Stored model assessments are not independent verification; the [evaluation runner](../../packages/subagent/harness2/evaluation/README.md) measures held-out artifacts externally.
 
 -----
 
@@ -194,6 +204,15 @@ deactivate(parent: Agent): Promise<boolean>
  * @returns the workspace, its binding when present, and revision summaries in ascending order.
  */
 status(parent: Agent, domain?: string): { workspace: string; binding?: Harness2Binding; revisions: { domain: string; mode: 'parallel' | 'sequential'; revision: number; runId: string; adoptedAt: number }[] }
+
+/**
+ * Apply a selected patch to its originating workspace after user approval.
+ * @param parent - Exact live originating parent in the original workspace.
+ * @param id - Completed workspace preview.
+ * @param options - Cancellation and originating tool call for approval audit.
+ * @returns Whether files changed. If application is interrupted, inspect the workspace before retrying.
+ */
+applyChanges(parent: Agent, id: Harness2RunId, options: { signal: AbortSignal; callId?: ToolCallId }): Promise<boolean>
 ```
 
 Types: [Agent](core.md) · [ToolCallId](core.md)

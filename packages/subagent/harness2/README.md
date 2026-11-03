@@ -41,16 +41,21 @@ This is a Cordis service row, not a standalone application or an installable pro
     maxK: 4
     runtime: { backend: wasi }
     maxConcurrentRuns: 1
-    childTimeoutMs: 120000
-    maxStepsPerChild: 4
-    maxTokensPerChild: 4096
+    childTimeoutMs: 900000
+    maxStepsPerChild: 40
+    maxTokensPerChild: 16384
 ```
 
-The selected provider must support fresh local managed children, structured output, agent options, and depth limits. A missing or incompatible provider fails before a child starts. The service does not choose an external executor or invoke the upstream CLI.
+The selected provider must support fresh local managed children, structured output, agent options, and depth limits. Workspace execution additionally needs `subprocess`, `sandboxPolicy`, sandbox-enforcing `fs`, and a sandbox-enforcing `shell` when shell tools are advertised. Missing confinement, additional writable roots, rejected approval, or an oversized snapshot produces explicit read-only fallback in `executorReason`. The service does not invoke the upstream CLI.
 
 | Field | Default | Meaning |
 |---|---|---|
 | `provider` | `spawn` | Managed fresh-child provider. |
+| `rollout` / `editor` | `workspace` / `filesystem` | Independent coding copies and file-based candidate editing; explicit `read-only` / `json` modes remain available. |
+| `scratchDirectory` | `~/.dsh/harness2-scratch` | Absolute private scratch parent outside the project and shared OS temporary directory. |
+| `maxScratchBytes` / `maxScratchFiles` | `268435456` / `50000` | Source and collected-file bounds; not a running process disk quota. |
+| `maxDiffBytes` | `2097152` | Patch and Git-listing output bound. |
+| `maxRolloutTokens` | `200000` | Reported input plus output tokens per child including nested delegates; checked after each response. |
 | `mode` | `parallel` | Parallel or sequential recursion. |
 | `k` / `maxK` | `1` / `4` | Default width/depth and caller ceiling. |
 | `maxCandidateFiles` | `64` | Candidate file-count ceiling. |
@@ -65,19 +70,19 @@ The selected provider must support fresh local managed children, structured outp
 | `maxEvidenceChars` | `64000` | Maximum complete child message, including fixed text and serialized evidence. |
 | `maxOutputChars` | `16000` | Maximum answer field length. |
 | `maxReflectionChars` | `8000` | Maximum rationale or reflection field length. |
-| `childTimeoutMs` | `120000` | Per-child timeout including startup. |
-| `maxStepsPerChild` | `4` | Maximum admitted model steps per child. |
-| `maxTokensPerChild` | `4096` | Output-token cap per request, never above the parent’s cap. |
+| `childTimeoutMs` | `900000` | Per-child timeout including startup. |
+| `maxStepsPerChild` | `40` | Maximum admitted model steps per child. |
+| `maxTokensPerChild` | `16384` | Output-token cap per request, never above the parent’s cap. |
 | `maxConcurrentRuns` | `1` | Concurrent preview ceiling. |
 | `maxSavedRuns` | `50` | Inactive run/checkpoint retention at admission and completed previews at commit; active runs can temporarily exceed this count. |
 
 Character limits use JavaScript string length, not bytes or tokens. The generated [configuration catalog](../../../docs/config-catalog.md#deepseek-aidsh-harness2) owns accepted fields and defaults. Callers cannot raise these limits through the model tools.
 
-### Read-only task tools
+### Task tools
 
-`readTools` selects from `read`, `read_image`, `glob`, `grep`, `web_search`, and `web_fetch`; other names are rejected, and `[]` disables this access. At run start, the service captures the initiating parent’s visible, currently admitted tool definitions. Only answer rollouts and their candidate subagent delegates receive these tools. Proposal, composition, selection, and reflection children return structured output without parent task tools.
+`readTools` selects the read-only solver subset from `read`, `read_image`, `glob`, `grep`, `web_search`, and `web_fetch`. Workspace solvers additionally admit `write`, `edit`, `apply_patch`, `bash`, `pwsh`, and `skill` when visible and authorized in the parent. File editors admit read/glob/grep/write/edit with a candidate-directory write guard; selection and reflection use configured read-only tools. Parent-visible definitions are captured at run start.
 
-Each child step rechecks admission; dispatch rechecks the captured definition’s identity and the live parent’s tool guards. Child permissions also apply, and children cannot request permission to widen access. Speculative stages receive no parent shell, write, edit, or change-application tools. After reviewing a selected preview, the parent can apply changes through its ordinary tool and permission flow. Requests to execute generated candidate code are presented to the initiating parent for approval with the exact candidate hash, entry path, and JSON input.
+Each child step rechecks admission; dispatch rechecks definition identity and live parent guards. Child sandbox and never-approval policy also apply. Generated candidate code requests approval from the parent with the exact hash, entry path, and JSON input. Selected patches require separate parent approval.
 
 ### Candidate capabilities
 
@@ -100,7 +105,7 @@ The portable backend independently bounds writable filesystem bytes and entries,
 
 `runtime: null` disables generated execution; unavailable isolation never falls back to host execution. An explicit legacy Linux runtime configuration remains supported and requires non-root bubblewrap user/network namespaces, configured runtime paths and limits, and a deployment-verified memory-bounded container or cgroup. That backend's virtual-address-space limit does not bound aggregate RSS or kernel memory.
 
-Rollout evidence includes logged assistant messages and tool calls/results, including returned artifacts, within `maxTrajectoryChars`. Proposals and composition receive that trajectory; final selection receives anonymous delivered answers only. A longer trajectory keeps its earliest and newest events and marks the omitted middle; it never stops the run. A failed rollout keeps the trajectory observed before the failure.
+Workspace solvers use captured parent coding tools in separate copies of tracked and nonignored untracked files, including dirty contents. Each child has a logged writable root and `workspace-write` policy; the parent and service-owned Git metadata stay outside that root. Shell and filesystem confinement limit writes, not network access or all reads. Dependencies ignored by Git are not copied; install or provide them within the private copy if checks need them. Final deliverables include answers and bounded binary Git patches. `harness2_apply` checks and applies the selected patch to its originating workspace after separate approval; inspect the workspace before retrying an interrupted application because it is not a filesystem transaction.
 
 ### Persistence and failures
 
@@ -108,7 +113,7 @@ A completed preview stores its task, composed result, parent identity, library r
 
 Previewing does not accept a lesson. The separate remember operation requires the originating live parent, an approval answerer’s one-time grant, and a current library revision; the [subsystem reference](../../../docs/subsystems/harness2.md#run-and-lesson-ownership) owns these rules. Domain labels are trimmed, case-sensitive, and limited to 128 characters. Domains share the configured storage instance and are not workspace or user authorization scopes. Each mode/domain library retains up to `maxLibraryEntries` explicitly accepted task experiences, including full trees. `baseCandidate` remains the fixed baseline; library experiences are separate improvement evidence, snapshotted for resume.
 
-Child evidence keeps the whole prior reflection first when it fits, then admits the newest complete historical experiences that fit the complete serialized message budget, retaining their chronological order. `libraryOmitted` and `priorReflectionOmitted` report omitted history. This does not truncate or delete stored lessons. When current-run evidence alone exceeds the budget, execution evidence, trajectories, and then answers are clipped in the middle, longest first, until the message fits; candidate trees are never clipped. A message that still cannot fit stops the run.
+The default filesystem editor adapts the upstream propose, compose, and experience prompts. Editors read task files, bounded rollout trajectories, deliverables, complete accepted libraries, and the real DSH system prompt, tool schemas, and skill catalog under `context/`; only `context/harness/` accepts edits. No editor shell is advertised. Readback validates the complete tree; unchanged files implement KEEP_BASE, and empty optional files or DELETE remove components. Reflection stores `cue`, `lesson`, `evidence`, and JSON-encoded `edits`; these are model claims, not scores. Selection reads anonymous final answers and patches. `editor: json` uses inline bounded evidence instead; filesystem editing falls back to JSON when enforcing filesystem services are absent.
 
 An invalid candidate tree receives one retry; two invalid proposals inherit the current candidate with an explicit reason. Failed answer rollouts remain error evidence for subsequent improvement; if every final fails, no successful preview is produced. When selection fails or names an unknown answer, the first delivered final is returned with `selectionFallback`. Cancellation and unrecoverable stage or storage errors stop the run. A pending adoption does not count toward `maxConcurrentRuns`. Durable stage checkpoints permit the same parent to continue with the same task, domain, mode, k, and deployment configuration; this is not cold resume of a child. Cancellation and unload drain managed children. A final write already in progress cannot be rolled back; a successful commit returns success.
 
@@ -139,7 +144,7 @@ The native scheduler implements parallel and sequential recursion: a complete ru
 
 This package natively adapts [Harness²](https://github.com/google-research/harness2), without invoking its Python runner. DSH owns execution, permissions, model routing, and persistence. [NOTICE](NOTICE) records the exact source revision and source mapping; [LICENSE](LICENSE) preserves Google LLC’s Apache-2.0 terms separately from original MIT portions. This package does not promise full upstream API, benchmark-runner, or quality-gain equivalence.
 
-Managed one-shot children preserve DSH lifecycle and Session logs but reject follow-up messages and cold resume. Candidate instructions and saved lessons remain lower-trust data. Answer rollouts install validated candidate resources; they and their candidate delegates receive the captured, parent-authorized read-only task tools. Proposal and review children return structured output only. Candidates do not rewrite parent configuration or permissions. The [architecture reference](../../../docs/subsystems/harness2.md) owns composition and data ownership.
+Managed one-shot children preserve DSH lifecycle and Session logs but reject follow-up messages and cold resume. Candidate instructions and saved lessons remain lower-trust data. Solver tools are captured from the live parent and checked again at dispatch; administrative tools and unbounded background delegation are excluded. The [architecture reference](../../../docs/subsystems/harness2.md) owns composition and data ownership.
 
 | File | Role |
 |---|---|
@@ -173,7 +178,7 @@ Follow these references from the user workflow to the runtime facilities.
 
 #### What the model sees
 
-Each child receives one fresh user message containing the fixed policy below, the caller’s task, one assignment, and JSON-quoted evidence. The parent conversation is not seeded. Answer rollouts and candidate delegates additionally receive only the captured read-only task tools allowed by the parent’s scope. The structured-output provider separately supplies its result schema and capture instructions.
+Each child receives a fresh assignment without the parent conversation. Workspace solvers receive the workspace policy in [`src/prompts.ts`](src/prompts.ts); file editors receive the upstream assignments in [`src/editor-prompts.ts`](src/editor-prompts.ts) and inspect stage files. The text below documents the compact `read-only` / `json` mode. The structured-output provider separately supplies the result schema and capture instructions.
 
 ##### Shared child policy
 
@@ -225,7 +230,7 @@ Choose the strongest final answer for the task from the anonymous alternatives. 
 
 #### Token effect
 
-Each execution uses an independent child context; the count varies with `k`, retries, and selection. Fixed policy and assignments repeat text; `maxEvidenceChars` bounds each complete child message. `maxTokensPerChild` caps request output, not total input, run tokens, or currency.
+Each execution uses a separate child context. A default k=1 search uses eight child activities before retries; k>1 adds selection. `maxRolloutTokens` bounds reported input plus output per child and nested delegates after each response, so a response can overshoot. Missing usage is unknown cost, not free execution. No money or whole-search token cap is promised. Reusing an activated revision in ordinary tasks does not repeat the search; added guidance and resources still consume context tokens.
 
 #### KV Cache effect
 
@@ -238,8 +243,8 @@ Each child has an independent request history. Fixed policy may provide a common
 These constraints define the supported experiment, not a general self-modifying agent.
 
 - **Native adaptation, not the upstream runner** — no upstream CLI, complete plugin API, benchmark, or independent-evaluator equivalence.
-- **Bounded effort is not a price budget** — no aggregate token or currency ceiling; cleanup may extend beyond a child timeout.
-- **Explicit adoption and activation, not automatic improvement** — accepted material reaches ordinary Agents only through an approved workspace binding; global configuration remains unchanged, and nothing measures whether a binding helps.
+- **Reported-token limits** — Per-child checks allow response overshoot; there is no whole-search money ceiling. Cleanup can outlast the child deadline.
+- **Explicit adoption and activation** — Ordinary Agents use guidance only after an approved workspace binding. The [evaluation runner](evaluation/README.md) compares held-out artifacts; no built-in quality guarantee follows from adoption.
 - **Shared domain library** — domain labels are not tenant isolation; revisions can be listed and rolled back per workspace, but there is no forget operation or domain-count retention policy.
 - **Conditional checkpoint resume** — only the same parent and run fingerprint can reuse stages; it does not resume children or roll back external actions.
 

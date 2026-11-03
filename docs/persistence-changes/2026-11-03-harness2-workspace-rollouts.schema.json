@@ -1,0 +1,15 @@
+{
+  "formatVersion": 2,
+  "roots": [
+    {"key":"event:sandbox/workspace-root","kind":"event","event":"sandbox/workspace-root","surface":false,"digest":"f90a8497ffba4f0936be73c609dd3fdef3197b75d199f9617542ae53558b8ece"}
+  ],
+  "types": [],
+  "nodes": {
+    "0657d3ca5ac4e7bf": {"kind":"primitive","type":"number"},
+    "4cd48f3e5108bd6e": {"kind":"primitive","type":"string"},
+    "5064124737a25dbe": {"kind":"literal","value":"sandbox/workspace-root"},
+    "9666d0cf25f1bfc7": {"kind":"object","properties":[{"name":"root","type":"4cd48f3e5108bd6e","optional":false}],"indices":[]},
+    "dacf3d5f3e4ff619": {"kind":"literal","value":true},
+    "f90a8497ffba4f09": {"kind":"object","properties":[{"name":"data","type":"9666d0cf25f1bfc7","optional":false},{"name":"ignorable","type":"dacf3d5f3e4ff619","optional":true},{"name":"seq","type":"0657d3ca5ac4e7bf","optional":false},{"name":"time","type":"0657d3ca5ac4e7bf","optional":false},{"name":"type","type":"5064124737a25dbe","optional":false}],"indices":[]}
+  }
+}

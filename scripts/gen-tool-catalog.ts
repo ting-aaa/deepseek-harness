@@ -502,13 +502,14 @@ const TOOL_PACKAGES: ToolPackage[] = [
       ctx.provide('harness2', {
         run: () => Promise.reject(new Error('gen-tool-catalog: Harness² execution is unavailable during schema harvest')),
         remember: () => Promise.reject(new Error('gen-tool-catalog: Harness² adoption is unavailable during schema harvest')),
+        applyChanges: () => Promise.reject(new Error('gen-tool-catalog: Harness² patch application is unavailable during schema harvest')),
         activate: () => Promise.reject(new Error('gen-tool-catalog: Harness² activation is unavailable during schema harvest')),
         deactivate: () => Promise.reject(new Error('gen-tool-catalog: Harness² deactivation is unavailable during schema harvest')),
         status: () => { throw new Error('gen-tool-catalog: Harness² status is unavailable during schema harvest') },
       })
       await ctx.plugin(ToolHarness2)
     },
-    note: 'Included in full base-backed profiles and the Web/Desktop standard, cordis, and ptc presets. Bounded solver children use parent-authorized read-only task tools. Remember accepts reviewed guidance; activate binds an approved revision to new workspace sessions. Status lists revisions; deactivate stops future installations.',
+    note: 'Included in full base-backed profiles and the Web/Desktop standard, cordis, and ptc presets. Solvers use coding tools in private workspace copies when sandbox providers are available; otherwise they report read-only execution. File editors change only the candidate harness. Apply installs an approved selected patch; remember accepts guidance; activate binds a revision to new workspace sessions. Status lists revisions; deactivate stops future installations.',
   },
   {
     pkg: '@deepseek-ai/dsh-tool-ralph',

@@ -95,6 +95,15 @@ interface Harness2Result {
   readonly mode: 'parallel' | 'sequential'
   readonly k: number
   readonly selected: string
+  /** Actual solver mode; a missing sandbox or refused workspace grant is reported in executorReason. */
+  readonly executor?: 'workspace' | 'read-only' | undefined
+  readonly executorReason?: string | undefined
+  readonly editor?: 'filesystem' | 'json' | undefined
+  readonly workspace?: string | undefined
+  /** Sum of provider usage reports across newly executed and reused stage checkpoints. */
+  readonly usage?: { inputTokens: number; outputTokens: number } | undefined
+  /** Evidence-supported improvement experience, present for the filesystem editor. */
+  readonly lesson?: { cue: string; lesson: string; evidence: string; edits: string } | undefined
   /** Present when selection failed and the first delivered final stands in. */
   readonly selectionFallback?: string | undefined
   readonly finals: readonly {
@@ -103,6 +112,7 @@ interface Harness2Result {
     candidate: CandidateTree
     error?: string | undefined
     trajectory?: string | undefined
+    changes?: string | undefined
   }[]
   readonly stages: readonly Harness2Stage[]
 }
@@ -127,9 +137,9 @@ interface Harness2Binding {
 }
 ```
 
-提案、探测报告和已保存经验仍是低信任模型产物，不替换宿主策略。答案 rollout 安装经校验的原生候选资源；它们与其候选委派会获得配置中允许、从发起父 Agent 捕获的只读任务工具。默认允许 `read`、`read_image`、`glob`、`grep`、`web_search` 和 `web_fetch`；只接受其子集，`readTools: []` 可禁用。提案、合成、选择与反思阶段不获得父任务工具。每个子步骤重新检查准入；派发时还检查捕获的定义身份和实时父 Agent 的守卫。推测阶段不会获得父 Agent 的 shell、写入、编辑或应用修改工具。脚本和中间件使用内置可移植 WASI 运行时，并逐次向发起父 Agent 请求执行审批；`runtime: null` 会禁用它们。完整能力与限制见[包参考](../../packages/subagent/harness2/README.zh.md#use-this-package)。
+提案、探测报告和已保存经验仍是低信任模型产物。[包参考](../../packages/subagent/harness2/README.zh.md#use-this-package)定义工作区编码工具、文件编辑限制、回退模式、生成代码隔离执行与预算。工具准入重新检查捕获的定义和活跃父 Agent 的守卫。子会话记录的 `sandbox/workspace-root` 独立于不可变 Session 来源，固定其私有可写副本。
 
-新建子会话上下文不继承父对话。调用方必须提供任务材料，或可通过已准入只读工具访问的输入引用。审阅选中的预览后，父 Agent 通过普通工具循环和权限另行应用所需修改。已存证据与模型评估并非对正确性或任务完成情况的独立验证。
+新建子会话上下文不继承父对话。文件编辑器获得真实 DSH 提示词和工具参考以及有界执行证据。应用选中补丁、保存经验及绑定修订分别审批。模型评估不是独立验证；[评估运行器](../../packages/subagent/harness2/evaluation/README.zh.md)通过外部检查衡量留出任务的交付物。
 
 -----
 
@@ -194,6 +204,15 @@ deactivate(parent: Agent): Promise<boolean>
  * @returns the workspace, its binding when present, and revision summaries in ascending order.
  */
 status(parent: Agent, domain?: string): { workspace: string; binding?: Harness2Binding; revisions: { domain: string; mode: 'parallel' | 'sequential'; revision: number; runId: string; adoptedAt: number }[] }
+
+/**
+ * Apply a selected patch to its originating workspace after user approval.
+ * @param parent - Exact live originating parent in the original workspace.
+ * @param id - Completed workspace preview.
+ * @param options - Cancellation and originating tool call for approval audit.
+ * @returns Whether files changed. If application is interrupted, inspect the workspace before retrying.
+ */
+applyChanges(parent: Agent, id: Harness2RunId, options: { signal: AbortSignal; callId?: ToolCallId }): Promise<boolean>
 ```
 
 Types: [Agent](core.zh.md) · [ToolCallId](core.zh.md)

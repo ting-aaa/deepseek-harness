@@ -1717,6 +1717,12 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         parameters: [{ name: 'parent', description: 'exact live Agent whose working directory selects the workspace.' }, { name: 'domain', description: 'optional domain filter for listed revisions.' }],
         returns: 'the workspace, its binding when present, and revision summaries in ascending order.',
       },
+      {
+        signature: 'applyChanges(parent: Agent, id: Harness2RunId, options: { signal: AbortSignal; callId?: ToolCallId }): Promise<boolean>',
+        description: 'Apply a selected patch to its originating workspace after user approval.',
+        parameters: [{ name: 'parent', description: 'Exact live originating parent in the original workspace.' }, { name: 'id', description: 'Completed workspace preview.' }, { name: 'options', description: 'Cancellation and originating tool call for approval audit.' }],
+        returns: 'Whether files changed. If application is interrupted, inspect the workspace before retrying.',
+      },
     ],
   },
   {
@@ -2603,7 +2609,7 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
       },
       {
         signature: 'resolve(request: SandboxPolicyRequest = {}): SandboxExecutionPolicy',
-        description: 'Resolve the complete policy for one capability call. An approved explicit mode outranks the session\'s last `sandbox/mode` event, which outranks the deployment default. A session cwd is its workspace-write boundary; the configured root is the fallback for agentless calls and sessions without a cwd.',
+        description: 'Resolve the complete policy for one capability call. An approved explicit mode outranks the session\'s last `sandbox/mode` event, which outranks the deployment default. The last sandbox/workspace-root event overrides the immutable session cwd for isolated executions. The configured root is the fallback for agentless calls and sessions without a cwd.',
         parameters: [{ name: 'request', description: 'optional session and approved mode override.' }],
         returns: 'the fully resolved per-call mode and absolute workspace root.',
       },
@@ -2612,6 +2618,11 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         description: 'Read the session override without applying the deployment default.',
         parameters: [{ name: 'session', description: 'session whose log supplies the override.' }],
         returns: 'the last logged mode, or `undefined` without one.',
+      },
+      {
+        signature: 'setWorkspaceRoot(session: Session, root: string): void',
+        description: 'Set the writable workspace for an isolated Session before its first confined call.',
+        parameters: [{ name: 'session', description: 'Session whose subsequent sandbox calls use this directory.' }, { name: 'root', description: 'Absolute directory owned by the isolated execution.' }],
       },
     ],
   },
@@ -6678,7 +6689,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'Harness2Result',
-    declaration: 'export interface Harness2Result {\n    readonly runId: Harness2RunId;\n    readonly domain: string;\n    readonly answer: string;\n    readonly instructions: string;\n    readonly reflection: string;\n    readonly candidate: CandidateTree;\n    readonly mode: \'parallel\' | \'sequential\';\n    readonly k: number;\n    readonly selected: string;\n    readonly selectionFallback?: string | undefined;\n    readonly finals: readonly {\n        label: string;\n        answer: string;\n        candidate: CandidateTree;\n        error?: string | undefined;\n        trajectory?: string | undefined;\n    }[];\n    readonly stages: readonly Harness2Stage[];\n}',
+    declaration: 'export interface Harness2Result {\n    readonly runId: Harness2RunId;\n    readonly domain: string;\n    readonly answer: string;\n    readonly instructions: string;\n    readonly reflection: string;\n    readonly candidate: CandidateTree;\n    readonly mode: \'parallel\' | \'sequential\';\n    readonly k: number;\n    readonly selected: string;\n    readonly executor?: \'workspace\' | \'read-only\' | undefined;\n    readonly executorReason?: string | undefined;\n    readonly editor?: \'filesystem\' | \'json\' | undefined;\n    readonly workspace?: string | undefined;\n    readonly usage?: {\n        inputTokens: number;\n        outputTokens: number;\n    } | undefined;\n    readonly lesson?: {\n        cue: string;\n        lesson: string;\n        evidence: string;\n        edits: string;\n    } | undefined;\n    readonly selectionFallback?: string | undefined;\n    readonly finals: readonly {\n        label: string;\n        answer: string;\n        candidate: CandidateTree;\n        error?: string | undefined;\n        trajectory?: string | undefined;\n        changes?: string | undefined;\n    }[];\n    readonly stages: readonly Harness2Stage[];\n}',
   },
   {
     name: 'Harness2Stage',

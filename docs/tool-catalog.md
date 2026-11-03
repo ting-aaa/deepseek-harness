@@ -36,7 +36,7 @@ This table connects model-visible tool names to the plugin package and service s
 | `@deepseek-ai/dsh-tool-goal` | `create_goal`, `get_goal`, `update_goal` | `ctx.tools`, `ctx.agents`, `ctx.goals`, `ctx.systemPrompt`, `a calling Agent in an authorized open turn` | `tool/call`, `goal/change for mutations`, `tool/result` | - | create, edit, pause, and resume require direct-human root authority; complete and blocked also accept the exact current goal round. The default blocked lower bound is three admitted rounds. |
 | `@deepseek-ai/dsh-tool-schedule` | `schedule_create`, `schedule_edit`, `schedule_list`, `schedule_view` | `ctx.tools`, `ctx.schedule`, `ctx.systemPrompt` | `tool/call`, `Schedule storage domain create, update, or delete`, `tool/result` | - | A preset or Agent scope mounts this package and decides which agents receive its tools. Management reads and writes Host tasks by id across Sessions. Tasks store an RFC 5545 recurrence and an existing, first-created-and-reused, or per-run-new Session target. Delegated subagents cannot call these tools. |
 | `@deepseek-ai/dsh-tool-lsp` | `lsp` | `ctx.workingDirectory`, `ctx.tools`, `ctx.lsp`, `ctx.systemPrompt` | `tool/call`, `tool/result` | - | The lsp tool keeps provider selection and language-server subprocesses behind ctx.lsp, so its model-visible schema stays stable across providers. Requires a registered provider (e.g. `@deepseek-ai/dsh-lsp-stdio`) at runtime; without one, a query returns the structured `LSP_UNAVAILABLE` error rather than changing the schema. |
-| `@deepseek-ai/dsh-tool-harness2` | `harness2`, `harness2_activate`, `harness2_deactivate`, `harness2_remember`, `harness2_status` | `ctx.tools`, `ctx.harness2`, `a calling Agent` | `tool/call`, `tool/result`, `harness2/*`, `child Sessions`, `Harness² preview and lesson storage` | - | Included in full base-backed profiles and the Web/Desktop standard, cordis, and ptc presets. Bounded solver children use parent-authorized read-only task tools. Remember accepts reviewed guidance; activate binds an approved revision to new workspace sessions. Status lists revisions; deactivate stops future installations. |
+| `@deepseek-ai/dsh-tool-harness2` | `harness2`, `harness2_activate`, `harness2_apply`, `harness2_deactivate`, `harness2_remember`, `harness2_status` | `ctx.tools`, `ctx.harness2`, `a calling Agent` | `tool/call`, `tool/result`, `harness2/*`, `child Sessions`, `Harness² preview and lesson storage` | - | Included in full base-backed profiles and the Web/Desktop standard, cordis, and ptc presets. Solvers use coding tools in private workspace copies when sandbox providers are available; otherwise they report read-only execution. File editors change only the candidate harness. Apply installs an approved selected patch; remember accepts guidance; activate binds a revision to new workspace sessions. Status lists revisions; deactivate stops future installations. |
 | `@deepseek-ai/dsh-tool-ralph` | `ralph` | `ctx.tools`, `ctx.workflowEngine`, `ctx.subagents`, `ctx.systemPrompt`, `a calling Agent (exec.agent parents every fresh round)` | `tool/call`, `tool/result`, `workflow and child session events during execution` | - | A fixed foreground workflow starts one fresh structured child per round; the model selects only the immutable objective and an optional round cap. |
 | `@deepseek-ai/dsh-tool-skill` | `skill` | `ctx.workingDirectory`, `ctx.tools`, `ctx.agents`, `ctx.skills` | `tool/call`, `tool/result`, `user/message replacement catalogs via agent.inject()` | - | - |
 | `@deepseek-ai/dsh-tool-session-query` | `session_event_read`, `session_event_search`, `session_event_trace`, `session_search`, `session_trace` | `ctx.tools`, `ctx.systemPrompt`, `ctx.sessionQuery`, `ctx.agents`, `a calling Agent for workspace authority` | `tool/call`, `tool/result` | - | The five read-only tools hide provider cursors and authorize every result from the immutable calling agent session. The package is opt-in; compositions that need enforced deadlines or bounded inline output also mount the generic timeout or spill policies. |
@@ -1704,7 +1704,7 @@ The lsp tool keeps provider selection and language-server subprocesses behind ct
 
 ### `harness2`
 
-Compare alternative approaches for a complex or uncertain task with a bounded Harness² propose–probe–compose preview when the extra exploration is useful. Runs bounded parallel or sequential recursion with durable resumable stages. Solver children may use configured read-only DSH tools within your current permissions and candidate-scoped resources; isolated code execution additionally requires approval. Speculative stages do not run shell commands, write the parent workspace, or apply external changes. Apply selected changes through the normal parent tools only after reviewing the returned evidence. Returns an answer, candidate instructions, reflection, and evidence session ids. This does not verify correctness or adopt the candidate. Show the preview to the user before calling harness2_remember.
+Compare alternative approaches for a complex or uncertain task with a bounded Harness² propose–probe–compose preview when the extra exploration is useful. Runs bounded parallel or sequential recursion with durable resumable stages. With approval and sandbox-enforcing providers, solver children use coding tools in independent workspace copies; otherwise the result reports read-only execution. Returns the selected patch without applying it to the parent workspace. Review the evidence and use harness2_apply to apply it with separate approval. Returns an answer, candidate instructions, reflection, and evidence session ids. This does not verify correctness or adopt the candidate. Show the preview to the user before calling harness2_remember.
 
 ```json
 {
@@ -1777,6 +1777,26 @@ Apply a remembered Harness² revision to new sessions in the current workspace, 
 
 Source: [`packages/subagent/tool-harness2/src/index.ts`](../packages/subagent/tool-harness2/src/index.ts)
 
+### `harness2_apply`
+
+Apply the selected patch from a reviewed workspace preview to its original workspace. Requires this preview's originating parent and a separate one-time approval. Conflicting changes fail the context check. If application is interrupted, inspect the workspace before retrying.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "runId": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "runId"
+  ]
+}
+```
+
+Source: [`packages/subagent/tool-harness2/src/index.ts`](../packages/subagent/tool-harness2/src/index.ts)
+
 ### `harness2_deactivate`
 
 Stop applying Harness² guidance to new sessions in the current workspace. Running sessions keep what they already installed.
@@ -1829,7 +1849,7 @@ Show the current workspace's active Harness² revision and the remembered revisi
 
 Source: [`packages/subagent/tool-harness2/src/index.ts`](../packages/subagent/tool-harness2/src/index.ts)
 
-Included in full base-backed profiles and the Web/Desktop standard, cordis, and ptc presets. Bounded solver children use parent-authorized read-only task tools. Remember accepts reviewed guidance; activate binds an approved revision to new workspace sessions. Status lists revisions; deactivate stops future installations.
+Included in full base-backed profiles and the Web/Desktop standard, cordis, and ptc presets. Solvers use coding tools in private workspace copies when sandbox providers are available; otherwise they report read-only execution. File editors change only the candidate harness. Apply installs an approved selected patch; remember accepts guidance; activate binds a revision to new workspace sessions. Status lists revisions; deactivate stops future installations.
 
 <a id="deepseek-aidsh-tool-ralph"></a>
 

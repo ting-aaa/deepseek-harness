@@ -8,7 +8,7 @@ English | [中文](harness2.zh.md)
 
 ## Summary
 
-Harness² compares candidate guidance for a task before offering a composed answer and reusable lesson. You can inspect the preview without changing future runs, then explicitly remember a result for the same domain. This built-in feature uses multiple model-backed child sessions and can cost substantially more than an ordinary answer. Answer rollouts may inspect inputs using read-only tools allowed by the current parent task; speculative stages cannot use parent shell, write, edit, or change-application tools. Generated Python helpers and middleware use the built-in portable runtime and require approval for each execution, described in the [capability reference](../../../packages/subagent/harness2/README.md#use-this-package). It cannot independently certify that its answer is better.
+Harness² compares candidate guidance through repeated DSH task executions and returns a selected answer, patch, and reusable lesson. Workspace coding runs use independent copies after approval; unsupported hosts explicitly report read-only fallback. You can review the preview, apply its selected patch separately, remember its guidance, and activate a revision for later ordinary sessions. Search can cost substantially more than one answer; activating an existing revision does not repeat the search. The [capability reference](../../../packages/subagent/harness2/README.md#use-this-package) defines confinement and budgets. A model-generated reflection cannot certify improvement.
 
 ## Table of Contents
 
@@ -31,7 +31,7 @@ The agent may choose a bounded preview for complex or uncertain tasks when compa
 
 For the separately packaged Windows application, see [Harness² custom Desktop](../../../apps/desktop/README.md#harness2-custom-package). It uses isolated application data and the same built-in Harness² feature, including portable WASI execution without WSL; online model configuration is still required.
 
-Include the problem, constraints, and source material or accessible input paths in the task text. Children receive no parent conversation, so “use the document above” is insufficient. Answer rollouts can use only the configured read-only tools available within the initiating parent’s task scope; if the needed tool or input is unavailable, include the material directly. The default allowlist is `read`, `read_image`, `glob`, `grep`, `web_search`, and `web_fetch`; deployment configuration can narrow it or disable it with `readTools: []`. Choose a domain label for a reusable task family. Matching mode and domain labels share lessons across conversations using this storage instance; they are not a privacy or authorization boundary. Do not include secrets in task text.
+Include the problem, constraints, and source material or accessible input paths. Children receive no parent conversation, so “use the document above” is insufficient. Workspace copies contain current tracked and nonignored untracked files, including uncommitted edits; ignored dependencies need separate preparation. Choose a stable domain label. Matching mode/domain labels share experiences within this storage instance and are not privacy or authorization scopes. Do not include secrets.
 
 -----
 
@@ -47,7 +47,7 @@ Ask the agent to call `harness2` with a `task` and `domain`, and to leave the re
 }
 ```
 
-The default `k=1` run includes four answer rollouts, three improvement stages, and reflection. Use `mode: "parallel"` or `"sequential"` and a deployment-permitted `k` for wider or deeper comparisons; multiple finals add a selection step. Review the run identifier, selected answer, candidate tree, and lesson. Previewing does not authorize changes to the parent workspace or configuration. After reviewing the selected answer, ask the parent to apply any desired changes through its ordinary tool and permission flow; remembering a lesson is a separate operation.
+The default `k=1` search includes four task rollouts, three file-edit improvement stages, and reflection. Larger `k` increases cost; multiple finals also add selection. Review `executor`, `executorReason`, `editor`, `usage`, candidate files, final patches, and stage references. For a workspace preview, ask the same conversation to call `harness2_apply` with its `runId`; it separately requests approval and rejects conflicting patches. Previewing and remembering do not modify the parent workspace. Inspect files before retrying an interrupted application.
 
 Cancel the parent operation to stop before final storage commit; a durable write already started cannot be undone, so use the returned outcome. A failed run is not a complete preview. With its run identifier, `resumeRunId` and the same task, domain, mode, k, parent, and deployment configuration can reuse checkpoints. Same-ID resume retains failed rollouts as evidence rather than retrying them; omit the identifier to start a new run if those rollouts need retrying, which can incur additional model charges.
 
@@ -67,7 +67,7 @@ To retain an accepted result, ask the same parent conversation to call `harness2
 
 A later `harness2` call with the same mode and domain can use the accepted guidance and lesson. Ordinary DSH tasks gain it only after you ask the agent to call `harness2_activate` and approve the binding; new sessions in this workspace then receive the guidance, skills, and delegates. Ask for `harness2_status` to see revisions, `harness2_activate` with an older `revision` to roll back, or `harness2_deactivate` to stop. Repeating the currently accepted run is harmless; a preview based on an older library revision is rejected after another result has been remembered. Request a new preview against the current lesson instead of overwriting it.
 
-Each child receives only whole saved experiences and reflection that fit its message budget. Its evidence reports omitted history; the saved library remains intact. A growing library therefore does not require deleting accepted lessons to start a small new task.
+File editors can inspect accepted full-tree examples and structured experience in their read-only context. Compact JSON mode admits only history that fits its message budget and reports omissions. To measure usefulness, run the [external held-out evaluation](../../../packages/subagent/harness2/evaluation/README.md); adoption alone is not evidence of improvement.
 
 -----
 

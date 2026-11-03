@@ -22,8 +22,8 @@ export function apply(ctx: Context): void {
   ctx.tools.register(defineTool({
     name: 'harness2',
     description: 'Compare alternative approaches for a complex or uncertain task with a bounded Harness² propose–probe–compose preview when the extra exploration is useful. '
-      + 'Runs bounded parallel or sequential recursion with durable resumable stages. Solver children may use configured read-only DSH tools within your current permissions and candidate-scoped resources; isolated code execution additionally requires approval. '
-      + 'Speculative stages do not run shell commands, write the parent workspace, or apply external changes. Apply selected changes through the normal parent tools only after reviewing the returned evidence. '
+      + 'Runs bounded parallel or sequential recursion with durable resumable stages. With approval and sandbox-enforcing providers, solver children use coding tools in independent workspace copies; otherwise the result reports read-only execution. '
+      + 'Returns the selected patch without applying it to the parent workspace. Review the evidence and use harness2_apply to apply it with separate approval. '
       + 'Returns an answer, candidate instructions, reflection, and evidence session ids. This does not verify correctness or adopt the candidate. '
       + 'Show the preview to the user before calling harness2_remember.',
     parameters: {
@@ -42,10 +42,20 @@ export function apply(ctx: Context): void {
           reflection: { type: 'string', required: true },
           mode: { type: 'string', required: true }, k: { type: 'integer', required: true },
           selected: { type: 'string', required: true },
+          executor: { type: 'string' }, executorReason: { type: 'string' }, workspace: { type: 'string' },
+          editor: { type: 'string' },
+          lesson: { type: 'object', additionalProperties: false, properties: {
+            cue: { type: 'string', required: true }, lesson: { type: 'string', required: true },
+            evidence: { type: 'string', required: true }, edits: { type: 'string', required: true },
+          } },
+          usage: { type: 'object', additionalProperties: false, properties: {
+            inputTokens: { type: 'integer', required: true }, outputTokens: { type: 'integer', required: true },
+          } },
           selectionFallback: { type: 'string' },
           candidate: { type: 'object', additionalProperties: true, required: true },
           finals: { type: 'array', required: true, items: { type: 'object', additionalProperties: false, properties: {
-            trajectory: { type: 'string' }, error: { type: 'string' }, label: { type: 'string', required: true }, answer: { type: 'string', required: true },
+            trajectory: { type: 'string' }, changes: { type: 'string' }, error: { type: 'string' },
+            label: { type: 'string', required: true }, answer: { type: 'string', required: true },
             candidate: { type: 'object', additionalProperties: true, required: true },
           } } },
           stages: {
@@ -64,18 +74,38 @@ export function apply(ctx: Context): void {
       const result = await ctx.harness2.run({ parent: exec.agent, task: args.task, domain: args.domain, signal: exec.signal,
         ...args.mode === undefined ? {} : { mode: args.mode }, ...args.k === undefined ? {} : { k: args.k },
         ...args.resumeRunId === undefined ? {} : { resumeRunId: Harness2RunId(args.resumeRunId) } })
-      const { selectionFallback, ...rest } = result
+      const { selectionFallback, executor, executorReason, workspace, usage, editor, lesson, ...rest } = result
       return {
         ...rest,
         ...selectionFallback === undefined ? {} : { selectionFallback },
+        ...executor === undefined ? {} : { executor }, ...executorReason === undefined ? {} : { executorReason },
+        ...workspace === undefined ? {} : { workspace }, ...usage === undefined ? {} : { usage },
+        ...editor === undefined ? {} : { editor }, ...lesson === undefined ? {} : { lesson },
         stages: result.stages.map(stage => ({ phase: stage.phase, sessionId: stage.sessionId,
           ...stage.label === undefined ? {} : { label: stage.label } })),
         finals: result.finals.map(final => ({ label: final.label, answer: final.answer, candidate: final.candidate,
           ...final.error === undefined ? {} : { error: final.error },
+          ...final.changes === undefined ? {} : { changes: final.changes },
           ...final.trajectory === undefined ? {} : { trajectory: final.trajectory } })),
       }
     },
     presentCall: args => ({ card: 'generic', title: 'Harness² preview', rawInput: args.task }),
+    presentResult: () => ({ card: 'generic' }),
+  }))
+  ctx.tools.register(defineTool({
+    name: 'harness2_apply', description: 'Apply the selected patch from a reviewed workspace preview to its original workspace. '
+      + 'Requires this preview\'s originating parent and a separate one-time approval. Conflicting changes fail the context check. '
+      + 'If application is interrupted, inspect the workspace before retrying.',
+    parameters: { runId: { type: 'string', required: true } },
+    output: { schema: { type: 'object', additionalProperties: false, properties: { applied: { type: 'boolean', required: true } } },
+      render: (_args, value) => [{ type: 'text', text: JSON.stringify(value) }] },
+    async execute(args, exec) {
+      if (exec.agent === undefined) throw new Error('Harness² apply requires a calling Agent')
+      const applied = await ctx.harness2.applyChanges(exec.agent, Harness2RunId(args.runId), {
+        signal: exec.signal, callId: exec.callId })
+      return { applied }
+    },
+    presentCall: args => ({ card: 'generic', title: 'Apply Harness² patch', rawInput: args.runId }),
     presentResult: () => ({ card: 'generic' }),
   }))
   ctx.tools.register(defineTool({

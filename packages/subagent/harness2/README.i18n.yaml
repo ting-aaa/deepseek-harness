@@ -18,23 +18,23 @@
   en: 77f48428c157ce9c
   zh: afa2bd0b316530b7
 /deepseek-ai-dsh-harness2/use-this-package/minimal-configuration:
-  en: b65f20604e35cb4a
-  zh: c638e5cc85b7ab6b
-/deepseek-ai-dsh-harness2/use-this-package/read-only-task-tools:
-  en: f803b80489a97b78
-  zh: d9c2e77456034033
+  en: 7df28e552f2f4f6e
+  zh: 0c67f7b0a82acd6a
+/deepseek-ai-dsh-harness2/use-this-package/task-tools:
+  en: c19057413dd0d0f5
+  zh: d8b307387072fb8d
 /deepseek-ai-dsh-harness2/use-this-package/candidate-capabilities:
-  en: 0841a7d49df95e92
-  zh: 9c4ead0d6d2d8e81
+  en: d487c0d110c3a6f7
+  zh: b4f341470631ec93
 /deepseek-ai-dsh-harness2/use-this-package/persistence-and-failures:
-  en: 1e5fe953b57950d8
-  zh: 4cc51f79615dea23
+  en: d03538406924b8ad
+  zh: 3b2098ab0013477c
 /deepseek-ai-dsh-harness2/use-this-package/apply-adopted-guidance:
   en: f497aec04458cdb9
   zh: 68c077d811ea4c34
 /deepseek-ai-dsh-harness2/understand-the-implementation:
-  en: 75a060f75a5a3054
-  zh: 8105ce7ecc065d34
+  en: eadeb3418a34811a
+  zh: fb6c04b9e9758450
 /deepseek-ai-dsh-harness2/further-exploration:
   en: 3c1f32d0183c3356
   zh: 0427c8cefa8eb642
@@ -45,8 +45,8 @@
   en: 7daea56109a4b2a6
   zh: b701c495288a1880
 /deepseek-ai-dsh-harness2/model-experience/child-policy-and-assignments/what-the-model-sees:
-  en: 53cfa8f3139cb20d
-  zh: eae2a8fc924d4a68
+  en: 1c40bd6293f53b23
+  zh: d0a3432a5801b6b8
 /deepseek-ai-dsh-harness2/model-experience/child-policy-and-assignments/what-the-model-sees/shared-child-policy:
   en: 623e901a28a5d925
   zh: d9fb908e4a85da09
@@ -72,14 +72,14 @@
   en: 55b25165146e46d6
   zh: ecb39659a2d238f3
 /deepseek-ai-dsh-harness2/model-experience/child-policy-and-assignments/token-effect:
-  en: 428982a480c25906
-  zh: c761dc414e82e5f8
+  en: d1b704280b5cd979
+  zh: 17333780e9f66625
 /deepseek-ai-dsh-harness2/model-experience/child-policy-and-assignments/kv-cache-effect:
   en: 410dc48e69d80805
   zh: 9e60ec8024a7907f
 /deepseek-ai-dsh-harness2/known-limitations-and-deferred-work:
-  en: f525ddda221a32f1
-  zh: 444082b523dfcde5
+  en: a00b106685c8fcde
+  zh: 9981ec96c50cd00c
 /deepseek-ai-dsh-harness2/known-limitations-and-deferred-work/dev-note:
   en: 93a5db0acbbefee9
   zh: 77b850fdbed09bae

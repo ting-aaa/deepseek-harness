@@ -59,6 +59,7 @@ The [format references](persistence-changes/historical-formats/README.md) cover 
 | `event:request/context` | event | `37cbc9cf06d494cfe5c67f078af1605eacb8e4c2c853e9e26455b73de0ee7ccf` | [`{ type: "request/context" }`](#persistence-type-sha256-37cbc9cf06d494cfe5c67f078af1605eacb8e4c2c853e9e26455b73de0ee7ccf) |
 | `event:request/header` | event | `4208123b50df5006b181481ab45fcf1cde807b88d3fd4d340090bc2e202fac41` | [`{ type: "request/header" }`](#persistence-type-sha256-4208123b50df5006b181481ab45fcf1cde807b88d3fd4d340090bc2e202fac41) |
 | `event:sandbox/mode` | event | `516da4cdd6d2f1e5ce488e648578ca51f40e458f707b803e5b24de870e799415` | [`{ type: "sandbox/mode" }`](#persistence-type-sha256-516da4cdd6d2f1e5ce488e648578ca51f40e458f707b803e5b24de870e799415) |
+| `event:sandbox/workspace-root` | event | `f90a8497ffba4f0936be73c609dd3fdef3197b75d199f9617542ae53558b8ece` | [`{ type: "sandbox/workspace-root" }`](#persistence-type-sha256-f90a8497ffba4f0936be73c609dd3fdef3197b75d199f9617542ae53558b8ece) |
 | `event:schedule/change` | event | `a0a2e5c42e1c929445ecd1cd70f49be6b66441894ec72c08e8ae332821d4a3cb` | [`{ type: "schedule/change" }`](#persistence-type-sha256-a0a2e5c42e1c929445ecd1cd70f49be6b66441894ec72c08e8ae332821d4a3cb) |
 | `event:session-log-deepseek/delivery-accepted` | event | `d63b8b8ffad9c02fd80c43a17df4f240c1fe8118ecca9de34f9d5871838ab5b9` | [`{ type: "session-log-deepseek/delivery-accepted" }`](#persistence-type-sha256-d63b8b8ffad9c02fd80c43a17df4f240c1fe8118ecca9de34f9d5871838ab5b9) |
 | `event:session/end-seed` | event | `5e6db6e24948d4a853c71cb9fabd252ad051ce93d4672c1266cf837c1c17b84e` | [`{ type: "session/end-seed" }`](#persistence-type-sha256-5e6db6e24948d4a853c71cb9fabd252ad051ce93d4672c1266cf837c1c17b84e) |
@@ -581,7 +582,7 @@ Source: [`packages/goal/goal/src/domain.ts:66`](../packages/goal/goal/src/domain
 
 Types: [Harness2RunId](subsystems/harness2.md)
 
-Source: [`packages/subagent/harness2/src/types.ts:56`](../packages/subagent/harness2/src/types.ts)
+Source: [`packages/subagent/harness2/src/types.ts:66`](../packages/subagent/harness2/src/types.ts)
 
 <a id="harness2execution--log-only"></a>
 
@@ -592,7 +593,7 @@ Source: [`packages/subagent/harness2/src/types.ts:56`](../packages/subagent/harn
 'harness2/execution': { hash: string; path: string; status: 'start' | 'completed' | 'failed'; detail: string }
 ```
 
-Source: [`packages/subagent/harness2/src/types.ts:58`](../packages/subagent/harness2/src/types.ts)
+Source: [`packages/subagent/harness2/src/types.ts:68`](../packages/subagent/harness2/src/types.ts)
 
 <a id="harness2overlay--log-only"></a>
 
@@ -603,7 +604,7 @@ Source: [`packages/subagent/harness2/src/types.ts:58`](../packages/subagent/harn
 'harness2/overlay': { disabled: true } | { workspace: string; domain: string; mode: 'parallel' | 'sequential'; revision: number; candidateHash: string }
 ```
 
-Source: [`packages/subagent/harness2/src/types.ts:62`](../packages/subagent/harness2/src/types.ts)
+Source: [`packages/subagent/harness2/src/types.ts:72`](../packages/subagent/harness2/src/types.ts)
 
 <a id="harness2remember-request--log-only"></a>
 
@@ -616,7 +617,7 @@ Source: [`packages/subagent/harness2/src/types.ts:62`](../packages/subagent/harn
 
 Types: [Harness2RunId](subsystems/harness2.md)
 
-Source: [`packages/subagent/harness2/src/types.ts:60`](../packages/subagent/harness2/src/types.ts)
+Source: [`packages/subagent/harness2/src/types.ts:70`](../packages/subagent/harness2/src/types.ts)
 
 <a id="harness2start--log-only"></a>
 
@@ -629,7 +630,7 @@ Source: [`packages/subagent/harness2/src/types.ts:60`](../packages/subagent/harn
 
 Types: [Harness2RunId](subsystems/harness2.md)
 
-Source: [`packages/subagent/harness2/src/types.ts:54`](../packages/subagent/harness2/src/types.ts)
+Source: [`packages/subagent/harness2/src/types.ts:64`](../packages/subagent/harness2/src/types.ts)
 
 ### `hook/*`
 
@@ -863,7 +864,21 @@ Source: [`packages/core/session/src/types.ts:398`](../packages/core/session/src/
 }
 ```
 
-Source: [`packages/sandbox/sandbox-policy/src/session-mode.ts:33`](../packages/sandbox/sandbox-policy/src/session-mode.ts)
+Source: [`packages/sandbox/sandbox-policy/src/session-mode.ts:38`](../packages/sandbox/sandbox-policy/src/session-mode.ts)
+
+<a id="sandboxworkspace-root--log-only"></a>
+
+#### `sandbox/workspace-root` — log-only
+
+```ts persistence-catalog
+/**
+ * Explicit per-Session writable workspace root; older readers must refuse this event.
+ * @param root - Absolute execution-world directory used by subsequent confined calls.
+ */
+'sandbox/workspace-root': { root: string }
+```
+
+Source: [`packages/sandbox/sandbox-policy/src/session-mode.ts:30`](../packages/sandbox/sandbox-policy/src/session-mode.ts)
 
 ### `schedule/*`
 
@@ -2566,6 +2581,14 @@ SHA-256: `24b10f7cdae64928f89c49afc2eca0af9eb4a2f135e16f3416e6b8461fef1748`
 SHA-256: `ca085dba2c877feceebf3c62f9d39c6c2a4d2314d97b94b3927a780fe8fe2bb2`
 
 `"sandbox/mode"`
+
+<a id="persistence-type-sha256-5064124737a25dbec3c1f8de5e5f7168023f586f79f659b94895e2fa524523a5"></a>
+
+### `"sandbox/workspace-root"`
+
+SHA-256: `5064124737a25dbec3c1f8de5e5f7168023f586f79f659b94895e2fa524523a5`
+
+`"sandbox/workspace-root"`
 
 <a id="persistence-type-sha256-d9edf1862e4471d6ad8a106a3f4160e0643874368707d50ecd8e27e5ee7a2567"></a>
 
@@ -6064,7 +6087,7 @@ Sources: [`packages/core/session/src/types.ts:369`](../packages/core/session/src
 
 SHA-256: `6e288c065c82a5a42280a17dfbb3fbdd52a0a03fa59ee18116b1cbca818ada3f`
 
-Sources: [`packages/subagent/harness2/src/types.ts:54`](../packages/subagent/harness2/src/types.ts)
+Sources: [`packages/subagent/harness2/src/types.ts:64`](../packages/subagent/harness2/src/types.ts)
 
 | Property | Presence | Type |
 |---|---|---|
@@ -6107,7 +6130,7 @@ Sources: [`packages/interaction/user-approval/src/types.ts:44`](../packages/inte
 
 SHA-256: `25c7e4f2d1d7eaefe9e4922f055f6815fb3b525a0fdbd13611481a57e63d85d9`
 
-Sources: [`packages/subagent/harness2/src/types.ts:62`](../packages/subagent/harness2/src/types.ts)
+Sources: [`packages/subagent/harness2/src/types.ts:72`](../packages/subagent/harness2/src/types.ts)
 
 | Property | Presence | Type |
 |---|---|---|
@@ -6237,7 +6260,7 @@ SHA-256: `cbbe8377ee744964537dbafd83607219e58ba79a13f6db0d0645c7ad3d5e8a09`
 
 SHA-256: `567277d4445beee9ab8123174ad9fc0ca3b849ee95df6bc9ffb3b78c4740c303`
 
-Sources: [`packages/subagent/harness2/src/types.ts:56`](../packages/subagent/harness2/src/types.ts)
+Sources: [`packages/subagent/harness2/src/types.ts:66`](../packages/subagent/harness2/src/types.ts)
 
 | Property | Presence | Type |
 |---|---|---|
@@ -6442,7 +6465,7 @@ Array of [`{ description, name }`](#persistence-type-sha256-83079c8a3f733ac3fa60
 
 SHA-256: `4a258feebe9ec7a9eb81bc13713db62edcee6129e7c0857ce067455f21c86a8f`
 
-Sources: [`packages/subagent/harness2/src/types.ts:58`](../packages/subagent/harness2/src/types.ts)
+Sources: [`packages/subagent/harness2/src/types.ts:68`](../packages/subagent/harness2/src/types.ts)
 
 | Property | Presence | Type |
 |---|---|---|
@@ -6473,7 +6496,7 @@ Sources: [`packages/experimental/hook-protocol/src/types.ts:19`](../packages/exp
 
 SHA-256: `77d567ec5a140a3f1661cfd3722ad13ae10117b7a168dd7656c3591e5083f1a5`
 
-Sources: [`packages/subagent/harness2/src/types.ts:62`](../packages/subagent/harness2/src/types.ts)
+Sources: [`packages/subagent/harness2/src/types.ts:72`](../packages/subagent/harness2/src/types.ts)
 
 | Property | Presence | Type |
 |---|---|---|
@@ -6500,7 +6523,7 @@ Sources: [`packages/experimental/liveshare/src/host/viewer-principal.ts:29`](../
 
 SHA-256: `62c79b63841167e939047d0fbe62dd0ba7f83a0a8abd477d0f97129e2259c99b`
 
-Sources: [`packages/subagent/harness2/src/types.ts:60`](../packages/subagent/harness2/src/types.ts)
+Sources: [`packages/subagent/harness2/src/types.ts:70`](../packages/subagent/harness2/src/types.ts)
 
 | Property | Presence | Type |
 |---|---|---|
@@ -8189,7 +8212,7 @@ Sources: [`packages/experimental/agent-team/src/types.ts:236`](../packages/exper
 
 SHA-256: `9890113e97dd3541787bfe6704f2b223d3a890b5325ca0acae2b0398909b413e`
 
-Sources: [`packages/sandbox/sandbox-policy/src/session-mode.ts:33`](../packages/sandbox/sandbox-policy/src/session-mode.ts)
+Sources: [`packages/sandbox/sandbox-policy/src/session-mode.ts:38`](../packages/sandbox/sandbox-policy/src/session-mode.ts)
 
 | Property | Presence | Type |
 |---|---|---|
@@ -8246,6 +8269,18 @@ Sources: [`packages/web/web-search-deepseek/src/provider.ts:64`](../packages/web
 |---|---|---|
 | `content` | required | [`tuple (1 positions)`](#persistence-type-sha256-8f6d609794bf5afc01d7ccf3e03811d32f4b8047f58a2c9a98db0154c2ad7cb9) |
 | `role` | required | `"user"` |
+
+<a id="persistence-type-sha256-9666d0cf25f1bfc7d23cef91307c922d0bbdd63818355f7f664a4c11b63c386f"></a>
+
+### `{ root }`
+
+SHA-256: `9666d0cf25f1bfc7d23cef91307c922d0bbdd63818355f7f664a4c11b63c386f`
+
+Sources: [`packages/sandbox/sandbox-policy/src/session-mode.ts:30`](../packages/sandbox/sandbox-policy/src/session-mode.ts)
+
+| Property | Presence | Type |
+|---|---|---|
+| `root` | required | `string` |
 
 <a id="persistence-type-sha256-8bb8c3751a6ce64b61aba1ec7ae798c00a5803c4d868a0430873216c6569ed52"></a>
 
@@ -9044,6 +9079,22 @@ SHA-256: `516da4cdd6d2f1e5ce488e648578ca51f40e458f707b803e5b24de870e799415`
 | `seq` | required | `number` |
 | `time` | required | `number` |
 | `type` | required | `"sandbox/mode"` |
+
+<a id="persistence-type-sha256-f90a8497ffba4f0936be73c609dd3fdef3197b75d199f9617542ae53558b8ece"></a>
+
+<a id="persistence-type-eventsandboxworkspace-root"></a>
+
+### `{ type: "sandbox/workspace-root" }`
+
+SHA-256: `f90a8497ffba4f0936be73c609dd3fdef3197b75d199f9617542ae53558b8ece`
+
+| Property | Presence | Type |
+|---|---|---|
+| `data` | required | [`{ root }`](#persistence-type-sha256-9666d0cf25f1bfc7d23cef91307c922d0bbdd63818355f7f664a4c11b63c386f) |
+| `ignorable` | optional | `true` |
+| `seq` | required | `number` |
+| `time` | required | `number` |
+| `type` | required | `"sandbox/workspace-root"` |
 
 <a id="persistence-type-sha256-a0a2e5c42e1c929445ecd1cd70f49be6b66441894ec72c08e8ae332821d4a3cb"></a>
 

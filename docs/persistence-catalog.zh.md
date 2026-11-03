@@ -61,6 +61,7 @@
 | `event:request/context` | event | `37cbc9cf06d494cfe5c67f078af1605eacb8e4c2c853e9e26455b73de0ee7ccf` | [`{ type: "request/context" }`](#persistence-type-sha256-37cbc9cf06d494cfe5c67f078af1605eacb8e4c2c853e9e26455b73de0ee7ccf) |
 | `event:request/header` | event | `4208123b50df5006b181481ab45fcf1cde807b88d3fd4d340090bc2e202fac41` | [`{ type: "request/header" }`](#persistence-type-sha256-4208123b50df5006b181481ab45fcf1cde807b88d3fd4d340090bc2e202fac41) |
 | `event:sandbox/mode` | event | `516da4cdd6d2f1e5ce488e648578ca51f40e458f707b803e5b24de870e799415` | [`{ type: "sandbox/mode" }`](#persistence-type-sha256-516da4cdd6d2f1e5ce488e648578ca51f40e458f707b803e5b24de870e799415) |
+| `event:sandbox/workspace-root` | event | `f90a8497ffba4f0936be73c609dd3fdef3197b75d199f9617542ae53558b8ece` | [`{ type: "sandbox/workspace-root" }`](#persistence-type-sha256-f90a8497ffba4f0936be73c609dd3fdef3197b75d199f9617542ae53558b8ece) |
 | `event:schedule/change` | event | `a0a2e5c42e1c929445ecd1cd70f49be6b66441894ec72c08e8ae332821d4a3cb` | [`{ type: "schedule/change" }`](#persistence-type-sha256-a0a2e5c42e1c929445ecd1cd70f49be6b66441894ec72c08e8ae332821d4a3cb) |
 | `event:session-log-deepseek/delivery-accepted` | event | `d63b8b8ffad9c02fd80c43a17df4f240c1fe8118ecca9de34f9d5871838ab5b9` | [`{ type: "session-log-deepseek/delivery-accepted" }`](#persistence-type-sha256-d63b8b8ffad9c02fd80c43a17df4f240c1fe8118ecca9de34f9d5871838ab5b9) |
 | `event:session/end-seed` | event | `5e6db6e24948d4a853c71cb9fabd252ad051ce93d4672c1266cf837c1c17b84e` | [`{ type: "session/end-seed" }`](#persistence-type-sha256-5e6db6e24948d4a853c71cb9fabd252ad051ce93d4672c1266cf837c1c17b84e) |
@@ -583,7 +584,7 @@ export type SessionEvent<T extends SessionEventType = SessionEventType> = {
 
 类型：[Harness2RunId](subsystems/harness2.zh.md)
 
-来源：[`packages/subagent/harness2/src/types.ts:56`](../packages/subagent/harness2/src/types.ts)
+来源：[`packages/subagent/harness2/src/types.ts:66`](../packages/subagent/harness2/src/types.ts)
 
 <a id="harness2execution--log-only"></a>
 
@@ -594,7 +595,7 @@ export type SessionEvent<T extends SessionEventType = SessionEventType> = {
 'harness2/execution': { hash: string; path: string; status: 'start' | 'completed' | 'failed'; detail: string }
 ```
 
-来源：[`packages/subagent/harness2/src/types.ts:58`](../packages/subagent/harness2/src/types.ts)
+来源：[`packages/subagent/harness2/src/types.ts:68`](../packages/subagent/harness2/src/types.ts)
 
 <a id="harness2overlay--log-only"></a>
 
@@ -605,7 +606,7 @@ export type SessionEvent<T extends SessionEventType = SessionEventType> = {
 'harness2/overlay': { disabled: true } | { workspace: string; domain: string; mode: 'parallel' | 'sequential'; revision: number; candidateHash: string }
 ```
 
-来源：[`packages/subagent/harness2/src/types.ts:62`](../packages/subagent/harness2/src/types.ts)
+来源：[`packages/subagent/harness2/src/types.ts:72`](../packages/subagent/harness2/src/types.ts)
 
 <a id="harness2remember-request--log-only"></a>
 
@@ -618,7 +619,7 @@ export type SessionEvent<T extends SessionEventType = SessionEventType> = {
 
 类型：[Harness2RunId](subsystems/harness2.zh.md)
 
-来源：[`packages/subagent/harness2/src/types.ts:60`](../packages/subagent/harness2/src/types.ts)
+来源：[`packages/subagent/harness2/src/types.ts:70`](../packages/subagent/harness2/src/types.ts)
 
 <a id="harness2start--log-only"></a>
 
@@ -631,7 +632,7 @@ export type SessionEvent<T extends SessionEventType = SessionEventType> = {
 
 类型：[Harness2RunId](subsystems/harness2.zh.md)
 
-来源：[`packages/subagent/harness2/src/types.ts:54`](../packages/subagent/harness2/src/types.ts)
+来源：[`packages/subagent/harness2/src/types.ts:64`](../packages/subagent/harness2/src/types.ts)
 
 ### `hook/*`
 
@@ -865,7 +866,21 @@ export type SessionEvent<T extends SessionEventType = SessionEventType> = {
 }
 ```
 
-来源：[`packages/sandbox/sandbox-policy/src/session-mode.ts:33`](../packages/sandbox/sandbox-policy/src/session-mode.ts)
+来源：[`packages/sandbox/sandbox-policy/src/session-mode.ts:38`](../packages/sandbox/sandbox-policy/src/session-mode.ts)
+
+<a id="sandboxworkspace-root--log-only"></a>
+
+#### `sandbox/workspace-root` — log-only
+
+```ts persistence-catalog
+/**
+ * Explicit per-Session writable workspace root; older readers must refuse this event.
+ * @param root - Absolute execution-world directory used by subsequent confined calls.
+ */
+'sandbox/workspace-root': { root: string }
+```
+
+来源：[`packages/sandbox/sandbox-policy/src/session-mode.ts:30`](../packages/sandbox/sandbox-policy/src/session-mode.ts)
 
 ### `schedule/*`
 
@@ -2568,6 +2583,14 @@ SHA-256: `24b10f7cdae64928f89c49afc2eca0af9eb4a2f135e16f3416e6b8461fef1748`
 SHA-256: `ca085dba2c877feceebf3c62f9d39c6c2a4d2314d97b94b3927a780fe8fe2bb2`
 
 `"sandbox/mode"`
+
+<a id="persistence-type-sha256-5064124737a25dbec3c1f8de5e5f7168023f586f79f659b94895e2fa524523a5"></a>
+
+### `"sandbox/workspace-root"`
+
+SHA-256: `5064124737a25dbec3c1f8de5e5f7168023f586f79f659b94895e2fa524523a5`
+
+`"sandbox/workspace-root"`
 
 <a id="persistence-type-sha256-d9edf1862e4471d6ad8a106a3f4160e0643874368707d50ecd8e27e5ee7a2567"></a>
 
@@ -6066,7 +6089,7 @@ SHA-256: `e4c18e294232c3ba6c9f1999f168263cc55956147cfe4121720899be8e52edd1`
 
 SHA-256: `6e288c065c82a5a42280a17dfbb3fbdd52a0a03fa59ee18116b1cbca818ada3f`
 
-来源：[`packages/subagent/harness2/src/types.ts:54`](../packages/subagent/harness2/src/types.ts)
+来源：[`packages/subagent/harness2/src/types.ts:64`](../packages/subagent/harness2/src/types.ts)
 
 | 属性 | 存在性 | 类型 |
 |---|---|---|
@@ -6109,7 +6132,7 @@ SHA-256: `45f2a07ea94573123b6ae14db787a40062dec3834f36d8be92c523d40ba28448`
 
 SHA-256: `25c7e4f2d1d7eaefe9e4922f055f6815fb3b525a0fdbd13611481a57e63d85d9`
 
-来源：[`packages/subagent/harness2/src/types.ts:62`](../packages/subagent/harness2/src/types.ts)
+来源：[`packages/subagent/harness2/src/types.ts:72`](../packages/subagent/harness2/src/types.ts)
 
 | 属性 | 存在性 | 类型 |
 |---|---|---|
@@ -6239,7 +6262,7 @@ SHA-256: `cbbe8377ee744964537dbafd83607219e58ba79a13f6db0d0645c7ad3d5e8a09`
 
 SHA-256: `567277d4445beee9ab8123174ad9fc0ca3b849ee95df6bc9ffb3b78c4740c303`
 
-来源：[`packages/subagent/harness2/src/types.ts:56`](../packages/subagent/harness2/src/types.ts)
+来源：[`packages/subagent/harness2/src/types.ts:66`](../packages/subagent/harness2/src/types.ts)
 
 | 属性 | 存在性 | 类型 |
 |---|---|---|
@@ -6444,7 +6467,7 @@ SHA-256: `aba175fb20ffc71112c55efe70458ff5d7dbfb83501892b4ba8d077f0ea5d7ba`
 
 SHA-256: `4a258feebe9ec7a9eb81bc13713db62edcee6129e7c0857ce067455f21c86a8f`
 
-来源：[`packages/subagent/harness2/src/types.ts:58`](../packages/subagent/harness2/src/types.ts)
+来源：[`packages/subagent/harness2/src/types.ts:68`](../packages/subagent/harness2/src/types.ts)
 
 | 属性 | 存在性 | 类型 |
 |---|---|---|
@@ -6475,7 +6498,7 @@ SHA-256: `119abe2b9c0b2f46ecb31d82b9acba4d4b30e049f655e2475e8b4ae12d5a9e25`
 
 SHA-256: `77d567ec5a140a3f1661cfd3722ad13ae10117b7a168dd7656c3591e5083f1a5`
 
-来源：[`packages/subagent/harness2/src/types.ts:62`](../packages/subagent/harness2/src/types.ts)
+来源：[`packages/subagent/harness2/src/types.ts:72`](../packages/subagent/harness2/src/types.ts)
 
 | 属性 | 存在性 | 类型 |
 |---|---|---|
@@ -6502,7 +6525,7 @@ SHA-256: `0a92c5bdfa06c2e2615b777728f3aa95f408d43b9012e7b754568311251db623`
 
 SHA-256: `62c79b63841167e939047d0fbe62dd0ba7f83a0a8abd477d0f97129e2259c99b`
 
-来源：[`packages/subagent/harness2/src/types.ts:60`](../packages/subagent/harness2/src/types.ts)
+来源：[`packages/subagent/harness2/src/types.ts:70`](../packages/subagent/harness2/src/types.ts)
 
 | 属性 | 存在性 | 类型 |
 |---|---|---|
@@ -8191,7 +8214,7 @@ SHA-256: `0bcfaf5566d271028429ac7b562cb59053c9d78b8ae14708c35fac835108d1b1`
 
 SHA-256: `9890113e97dd3541787bfe6704f2b223d3a890b5325ca0acae2b0398909b413e`
 
-来源：[`packages/sandbox/sandbox-policy/src/session-mode.ts:33`](../packages/sandbox/sandbox-policy/src/session-mode.ts)
+来源：[`packages/sandbox/sandbox-policy/src/session-mode.ts:38`](../packages/sandbox/sandbox-policy/src/session-mode.ts)
 
 | 属性 | 存在性 | 类型 |
 |---|---|---|
@@ -8248,6 +8271,18 @@ SHA-256: `9a2a9029f8d7ede05336980d8342737557f487b913bfd28853d0ab5214600ab5`
 |---|---|---|
 | `content` | 必需 | [`tuple (1 positions)`](#persistence-type-sha256-8f6d609794bf5afc01d7ccf3e03811d32f4b8047f58a2c9a98db0154c2ad7cb9) |
 | `role` | 必需 | `"user"` |
+
+<a id="persistence-type-sha256-9666d0cf25f1bfc7d23cef91307c922d0bbdd63818355f7f664a4c11b63c386f"></a>
+
+### `{ root }`
+
+SHA-256: `9666d0cf25f1bfc7d23cef91307c922d0bbdd63818355f7f664a4c11b63c386f`
+
+来源：[`packages/sandbox/sandbox-policy/src/session-mode.ts:30`](../packages/sandbox/sandbox-policy/src/session-mode.ts)
+
+| 属性 | 存在性 | 类型 |
+|---|---|---|
+| `root` | 必需 | `string` |
 
 <a id="persistence-type-sha256-8bb8c3751a6ce64b61aba1ec7ae798c00a5803c4d868a0430873216c6569ed52"></a>
 
@@ -9046,6 +9081,22 @@ SHA-256: `516da4cdd6d2f1e5ce488e648578ca51f40e458f707b803e5b24de870e799415`
 | `seq` | 必需 | `number` |
 | `time` | 必需 | `number` |
 | `type` | 必需 | `"sandbox/mode"` |
+
+<a id="persistence-type-sha256-f90a8497ffba4f0936be73c609dd3fdef3197b75d199f9617542ae53558b8ece"></a>
+
+<a id="persistence-type-eventsandboxworkspace-root"></a>
+
+### `{ type: "sandbox/workspace-root" }`
+
+SHA-256: `f90a8497ffba4f0936be73c609dd3fdef3197b75d199f9617542ae53558b8ece`
+
+| 属性 | 存在性 | 类型 |
+|---|---|---|
+| `data` | 必需 | [`{ root }`](#persistence-type-sha256-9666d0cf25f1bfc7d23cef91307c922d0bbdd63818355f7f664a4c11b63c386f) |
+| `ignorable` | 可选 | `true` |
+| `seq` | 必需 | `number` |
+| `time` | 必需 | `number` |
+| `type` | 必需 | `"sandbox/workspace-root"` |
 
 <a id="persistence-type-sha256-a0a2e5c42e1c929445ecd1cd70f49be6b66441894ec72c08e8ae332821d4a3cb"></a>
 
