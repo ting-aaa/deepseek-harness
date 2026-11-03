@@ -41,6 +41,7 @@ export const KNOWN_SESSION_EVENT_TYPES: ReadonlySet<string> = new Set([
   'goal/change',
   'harness2/end',
   'harness2/execution',
+  'harness2/overlay',
   'harness2/remember-request',
   'harness2/start',
   'hook/invoked',

@@ -164,6 +164,8 @@ const SECTION_ORDERS = {
   MCP_SERVERS: 3100,
   TOOLS_SDK: 5000,
   DELIVERABLE_FILE_REFERENCES: 9000,
+  // Workspace-adopted Harness² guidance follows every tool contract it may refer to.
+  HARNESS2_OVERLAY: 9500,
   STRUCTURED_OUTPUT: 9900,
   // Local paths and endpoints follow reusable instructions.
   HARNESS_SOURCE: 10000,

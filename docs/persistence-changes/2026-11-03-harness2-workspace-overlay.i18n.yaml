@@ -1,0 +1,28 @@
+# Bilingual-pair consistency record for 2026-11-03-harness2-workspace-overlay.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write docs/persistence-changes/2026-11-03-harness2-workspace-overlay.md
+/:
+  en: 3d5a424ae7d7e46b
+  zh: c22a8e4a62d8cc1a
+/2026-11-03-harness2-workspace-overlay:
+  en: ee2673ddcc770406
+  zh: 4a7030b0320ee424
+/2026-11-03-harness2-workspace-overlay/summary:
+  en: 40ae6a261d71f28e
+  zh: 493689948db50452
+/2026-11-03-harness2-workspace-overlay/table-of-contents:
+  en: 6cf314a069ceb451
+  zh: 9adff678e9ecab3b
+/2026-11-03-harness2-workspace-overlay/declaration:
+  en: 6907136f28e48c90
+  zh: 02f8298485f3d8e7
+/2026-11-03-harness2-workspace-overlay/compatibility:
+  en: 4699952dc2377c99
+  zh: 39b9dd75eb260a61
+/2026-11-03-harness2-workspace-overlay/verification:
+  en: 41d1bba0f2ca0f18
+  zh: 5d3dbcee342a8ff4
+/2026-11-03-harness2-workspace-overlay/dev-note:
+  en: b75c8458928b72b9
+  zh: 003ba4e17b4b5269

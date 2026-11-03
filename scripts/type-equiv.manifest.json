@@ -2781,6 +2781,11 @@
       "doc": "docs/subsystems/forge.md",
       "symbol": "ForgeReviewResult",
       "source": "packages/experimental/forge/src/types.ts"
+    },
+    {
+      "doc": "docs/subsystems/harness2.md",
+      "symbol": "Harness2Binding",
+      "source": "packages/subagent/harness2/src/overlay.ts"
     }
   ]
 }

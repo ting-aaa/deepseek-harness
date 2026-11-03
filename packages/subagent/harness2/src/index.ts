@@ -6,11 +6,14 @@ import type { Agent } from '@deepseek-ai/dsh-agent'
 import type { ToolCallId } from '@deepseek-ai/dsh-llm'
 import { SessionId } from '@deepseek-ai/dsh-session'
 import type { Domain } from '@deepseek-ai/dsh-storage-domain'
+import type { ProjectionHandle } from '@deepseek-ai/dsh-session-projection'
 import { STRUCTURED_OUTPUT_TOOL } from '@deepseek-ai/dsh-subagent'
-import type { SubagentActivation } from '@deepseek-ai/dsh-subagent'
 import { NativeToolExecutor } from '@deepseek-ai/dsh-tool-executor-native'
 import type { ObjectJsonSchema } from '@deepseek-ai/dsh-tools'
 import type {} from '@deepseek-ai/dsh-user-approval'
+import type {} from '@deepseek-ai/dsh-system-prompt'
+import type {} from '@deepseek-ai/dsh-skill'
+import type {} from '@deepseek-ai/dsh-working-directory'
 import { candidateCatalog, candidateHash, candidateInstructions, validateCandidateTree } from './candidate.ts'
 import type { CandidateTree } from './candidate.ts'
 import { installCandidateResources } from './candidate-resources.ts'
@@ -20,13 +23,20 @@ import { WasiCandidateRuntime } from './wasi-runtime.ts'
 import { WASI_DEFAULTS } from './wasi-config.ts'
 import type { WasiRuntimeConfig } from './wasi-config.ts'
 import { runSchedule } from './schedule.ts'
-import { librarySpec } from './records.ts'
-import type { PreviewRecord } from './records.ts'
+import { libraryKey, librarySpec, revisionKey } from './records.ts'
+import type { PreviewRecord, RevisionRecord } from './records.ts'
+import { overlaySkills, overlayText, workspaceRoot } from './overlay.ts'
+import type { Harness2Binding } from './overlay.ts'
+import { overlayProjection } from './overlay-projection.ts'
+import type { OverlayState } from './overlay-projection.ts'
 import { childPrompt, COMPOSE_MISSION, DOMAIN_MISSION, INVARIANT_MISSION, REFLECT_MISSION, SELECT_MISSION, SOLVE_MISSION, TREE_MISSION } from './prompts.ts'
 import type { Harness2Request, Harness2Result, Harness2RunId, Harness2Stage } from './types.ts'
 import { READ_ONLY_TASK_TOOLS, TaskToolAuthority } from './task-tools.ts'
 import type { ReadOnlyTaskTool } from './task-tools.ts'
 import { libraryEvidence } from './library-evidence.ts'
+import { createTrace, fitEvidence, pushTrace, renderTrace } from './evidence-fit.ts'
+import type { ExecutionTrace } from './evidence-fit.ts'
+import { settleActivation } from './activation.ts'
 
 export type { Harness2Request, Harness2Result, Harness2Stage } from './types.ts'
 export { Harness2RunId } from './brand.ts'
@@ -135,12 +145,9 @@ function schema(fields: readonly string[]): ObjectJsonSchema {
   }
 }
 
-class ChildExecutionFailure extends Error {}
-
-interface ExecutionTrace {
-  events: string[]
-  chars: number
-  overflow: boolean
+class ChildExecutionFailure extends Error {
+  /** Bounded trajectory observed before the failure, retained as improvement evidence. */
+  evidence: string | undefined
 }
 
 function contentDigest(input: object): string {
@@ -157,7 +164,7 @@ function runId(value: string): Harness2RunId {
 
 /** Native recursive candidate service; the tool consumer owns schema and presentation. */
 export class Harness2Engine extends Service {
-  static inject = ['agents', 'subagents', 'tools', 'storageDomain', 'approval']
+  static inject = ['agents', 'subagents', 'tools', 'storageDomain', 'approval', 'workingDirectory', 'sessionProjections', 'systemPrompt', 'skills']
   static Config: z<Config> = z.object({
     provider: z.string().default(DEFAULTS.provider),
     mode: z.union(['parallel', 'sequential']).default(DEFAULTS.mode),
@@ -190,7 +197,7 @@ export class Harness2Engine extends Service {
       workspaceBytes: z.number().step(1).min(1).required(), cpuSeconds: z.number().step(1).min(1).required(),
       maxProcesses: z.number().step(1).min(1).required(),
       maxArtifactFiles: z.number().step(1).min(1).required(), maxArtifactBytes: z.number().step(1).min(1).required(),
-    })]).default(DEFAULTS.runtime),
+    })]),
     maxTaskChars: z.number().step(1).min(1).default(DEFAULTS.maxTaskChars),
     maxInstructionsChars: z.number().step(1).min(1).default(DEFAULTS.maxInstructionsChars),
     maxEvidenceChars: z.number().step(1).min(1).default(DEFAULTS.maxEvidenceChars),
@@ -218,8 +225,10 @@ export class Harness2Engine extends Service {
   private readonly slotWaiters = new Set<() => void>()
   private readonly runningIds = new Set<string>()
   private readonly savingDomains = new Set<string>()
+  private readonly delegates = new Set<SessionId>()
   private previewCommit: Promise<void> = Promise.resolve()
   private domain!: Domain<typeof librarySpec>
+  private overlayState!: ProjectionHandle<OverlayState>
 
   constructor(ctx: Context, config: Config = {}) {
     super(ctx, 'harness2')
@@ -234,22 +243,24 @@ export class Harness2Engine extends Service {
       await Promise.allSettled([...this.active])
       await this.domain.close()
     }, 'harness2 lifecycle')
+    this.overlayState = await ctx.sessionProjections.register(overlayProjection)
     ctx.on('session/event', (session, event) => {
       const trace = this.pending.get(session.id)?.trace
-      if (trace === undefined || trace.overflow) return
+      if (trace === undefined) return
       let payload: object
       if (event.type === 'assistant/message') payload = { type: event.type, message: event.data.message }
       else if (event.type === 'tool/call') payload = { type: event.type, data: event.data }
       else if (event.type === 'tool/result') payload = { type: event.type, message: event.data.message }
       else return
-      const text = JSON.stringify({ sessionId: session.id, seq: event.seq, ...payload })
-      trace.chars += text.length + 1
-      if (trace.chars > this.config.maxTrajectoryChars) trace.overflow = true
-      else trace.events.push(text)
+      pushTrace(trace, JSON.stringify({ sessionId: session.id, seq: event.seq, ...payload }))
     })
     ctx.on('agent/created', async ({ agent }) => {
       const pending = this.pending.get(agent.id)
-      if (pending === undefined) return
+      if (pending === undefined) {
+        if (this.delegates.has(agent.id)) this.limitSteps(agent)
+        await this.installOverlay(agent)
+        return
+      }
       let allowed: readonly string[] = [STRUCTURED_OUTPUT_TOOL]
       // Install the final guard before awaiting resource initialization.
       agent.ctx.tools.restrict({ allow: [] })
@@ -278,13 +289,7 @@ export class Harness2Engine extends Service {
         })
       }
       allowed = [...allowed, ...taskTools]
-      let admitted = 0
-      agent.ctx.on('agent/pre-step', async (_payload, next) => {
-        if (admitted >= this.config.maxStepsPerChild) return { kind: 'reject' }
-        const decision = await next()
-        if (decision.kind === 'enter') admitted += 1
-        return decision
-      })
+      this.limitSteps(agent)
     })
   }
 
@@ -301,7 +306,7 @@ export class Harness2Engine extends Service {
     request.signal.throwIfAborted()
     const task = boundedText(request.task, 'task', this.config.maxTaskChars)
     const domain = boundedText(request.domain, 'domain', 128).trim()
-    if (this.active.size >= this.config.maxConcurrentRuns) throw new Error('Harness² concurrent preview limit reached')
+    if (this.runningIds.size >= this.config.maxConcurrentRuns) throw new Error('Harness² concurrent preview limit reached')
     const provider = this.ctx.subagents.getProvider(this.config.provider)
     if (provider === undefined || provider.inheritsParentContext || provider.prepareContinuable === undefined
       || !provider.capabilities.outputSchema || !provider.capabilities.agentOptions || !provider.capabilities.depthLimit) {
@@ -335,15 +340,199 @@ export class Harness2Engine extends Service {
     if (preview === undefined || preview.parentSession !== parent.id) {
       throw new Error('Harness² preview is absent, expired, or owned by another parent Session')
     }
-    if (this.savingDomains.has(`${preview.mode}:${preview.domain}`)) throw new Error('Harness² domain adoption is already in progress')
-    this.savingDomains.add(`${preview.mode}:${preview.domain}`)
+    if (this.savingDomains.has(libraryKey(preview.mode, preview.domain))) throw new Error('Harness² domain adoption is already in progress')
+    this.savingDomains.add(libraryKey(preview.mode, preview.domain))
     const promise = this.adopt(parent, preview, options)
     this.active.add(promise)
     void promise.finally(() => {
-      this.savingDomains.delete(`${preview.mode}:${preview.domain}`)
+      this.savingDomains.delete(libraryKey(preview.mode, preview.domain))
       this.active.delete(promise)
     }).catch(() => { /* The original promise reports adoption failure to its caller. */ })
     return promise
+  }
+
+  /**
+   * Bind one adopted revision to the caller's workspace so later top-level Agents in that
+   * workspace receive it as lower-trust guidance, native skills, and candidate resources.
+   * The current conversation is unchanged. Requires a one-time approval grant.
+   * @param parent - exact live Agent whose working directory selects the workspace.
+   * @param request - domain, optional mode (default configured mode), and optional revision (default latest).
+   * @param options - cancellation and optional originating tool call for approval audit.
+   * @returns the committed binding.
+   */
+  activate(parent: Agent, request: { domain: string; mode?: 'parallel' | 'sequential'; revision?: number },
+    options: { signal: AbortSignal; callId?: ToolCallId }): Promise<Harness2Binding> {
+    this.assertLive(parent)
+    return this.track(this.bind(parent, request, options))
+  }
+
+  private async bind(parent: Agent, request: { domain: string; mode?: 'parallel' | 'sequential'; revision?: number },
+    options: { signal: AbortSignal; callId?: ToolCallId }): Promise<Harness2Binding> {
+    this.assertLive(parent)
+    const domain = boundedText(request.domain, 'domain', 128).trim()
+    const mode = request.mode ?? this.config.mode
+    const record = this.revision(mode, domain, request.revision)
+    if (record === undefined) throw new Error(`Harness² has no adopted ${mode} revision ${request.revision ?? '(latest)'} for domain ${domain}`)
+    const workspace = workspaceRoot(this.ctx.workingDirectory.get(parent.session))
+    const signal = AbortSignal.any([options.signal, this.lifecycle.signal])
+    const outcome = await this.ctx.approval.request({
+      agent: parent, toolName: 'harness2_activate', signal,
+      ...options.callId === undefined ? {} : { callId: options.callId },
+      reason: `Apply adopted Harness² ${mode} revision ${record.revision} of domain ${domain} to new sessions in ${workspace}? `
+        + 'It adds lower-trust guidance, skills, and candidate resources; it never widens permissions.'
+        + `\n\nInstructions:\n${record.instructions}\n\nResources: ${JSON.stringify(candidateCatalog(record.candidate))}`,
+    })
+    if (outcome !== 'allowed-once') throw new Error(`Harness² activation was not approved (${outcome}); the workspace binding is unchanged`)
+    signal.throwIfAborted()
+    const binding: Harness2Binding = { workspace, domain, mode, revision: record.revision, boundAt: Date.now() }
+    await this.domain.table('bindings').put(workspace, binding)
+    return binding
+  }
+
+  /**
+   * Remove the caller workspace's binding; already running Agents keep their installed guidance.
+   * @param parent - exact live Agent whose working directory selects the workspace.
+   * @returns whether a binding was removed.
+   */
+  deactivate(parent: Agent): Promise<boolean> {
+    this.assertLive(parent)
+    return this.track(this.unbind(parent))
+  }
+
+  private async unbind(parent: Agent): Promise<boolean> {
+    const workspace = workspaceRoot(this.ctx.workingDirectory.get(parent.session))
+    const bindings = this.domain.table('bindings')
+    if (bindings.get(workspace) === undefined) return false
+    await bindings.deleteMany([workspace])
+    return true
+  }
+
+  /**
+   * Describe the caller workspace's binding and the adopted revisions available for rollback.
+   * @param parent - exact live Agent whose working directory selects the workspace.
+   * @param domain - optional domain filter for listed revisions.
+   * @returns the workspace, its binding when present, and revision summaries in ascending order.
+   */
+  status(parent: Agent, domain?: string): { workspace: string; binding?: Harness2Binding; revisions: { domain: string; mode: 'parallel' | 'sequential'; revision: number; runId: string; adoptedAt: number }[] } {
+    this.assertLive(parent)
+    const workspace = workspaceRoot(this.ctx.workingDirectory.get(parent.session))
+    const binding = this.domain.table('bindings').get(workspace)
+    const revisions = [...this.domain.table('revisions').entries()].map(([, value]) => value)
+      .filter(record => this.revision(record.mode, record.domain, record.revision)?.runId === record.runId)
+      .filter(record => domain === undefined || record.domain === domain.trim())
+      .sort((a, b) => a.domain.localeCompare(b.domain, 'en') || a.mode.localeCompare(b.mode, 'en') || a.revision - b.revision)
+      .map(({ domain: name, mode, revision, runId: id, adoptedAt }) => ({ domain: name, mode, revision, runId: id, adoptedAt }))
+    return { workspace, ...binding === undefined ? {} : { binding }, revisions }
+  }
+
+  private revision(mode: 'parallel' | 'sequential', domain: string, value: number | undefined): RevisionRecord | undefined {
+    const lesson = this.domain.table('lessons').get(libraryKey(mode, domain))
+    const target = value ?? lesson?.revision
+    if (target === undefined || lesson === undefined || target > lesson.revision) return undefined
+    const stored = this.domain.table('revisions').get(revisionKey(mode, domain, target))
+    if (stored !== undefined && (target < lesson.revision || stored.runId === lesson.runId)) return stored
+    // Version 2 libraries kept only the current lesson; it remains bindable as its own revision.
+    return lesson.revision === target
+      ? { domain, mode, revision: target, runId: lesson.runId, candidate: lesson.candidate,
+        instructions: lesson.instructions, reflection: lesson.reflection, adoptedAt: 0 }
+      : undefined
+  }
+
+  private async installOverlay(agent: Agent): Promise<void> {
+    if (agent.session.header.origin === 'subagent') return
+    const pinned = this.overlayState.stateOf(agent.session)
+    if (pinned !== null && 'disabled' in pinned) return
+    const binding = pinned ?? this.domain.table('bindings').get(workspaceRoot(this.ctx.workingDirectory.get(agent.session)))
+    if (binding === undefined) {
+      agent.session.append('harness2/overlay', { disabled: true })
+      return
+    }
+    const record = this.revision(binding.mode, binding.domain, binding.revision)
+    if (record === undefined) {
+      if (pinned !== null) throw new Error('Harness² recorded overlay revision is missing; restore it before resuming')
+      this.ctx.logger.warn(`Harness² binding for ${binding.workspace} names missing revision ${binding.revision}`)
+      agent.session.append('harness2/overlay', { disabled: true })
+      return
+    }
+    let tree: CandidateTree
+    try {
+      tree = validateCandidateTree(record.candidate, {
+        maxFiles: this.config.maxCandidateFiles, maxFileBytes: this.config.maxCandidateFileBytes,
+        maxTotalBytes: this.config.maxCandidateBytes, maxAlwaysOnChars: this.config.maxInstructionsChars })
+    } catch (error) {
+      if (pinned !== null) {
+        throw new Error('Harness² recorded overlay revision is invalid; restore it before resuming', { cause: error })
+      }
+      this.ctx.logger.warn(`Harness² bound revision is no longer valid: ${error instanceof Error ? error.message : String(error)}`)
+      agent.session.append('harness2/overlay', { disabled: true })
+      return
+    }
+    if (pinned !== null && candidateHash(tree) !== pinned.candidateHash) {
+      throw new Error('Harness² recorded overlay candidate hash mismatch; restore the adopted revision before resuming')
+    }
+    const runtimeConfig = this.config.runtime
+    const executable = new Set([...candidateCatalog(tree).scripts, ...candidateCatalog(tree).plugins])
+    const omitted = runtimeConfig === null ? [...executable] : []
+    const installed = omitted.length ? Object.fromEntries(Object.entries(tree).filter(([path]) => !executable.has(path))) : tree
+    const text = overlayText(binding, installed, omitted)
+    const systemPrompt = agent.ctx.systemPrompt
+    if (text) {
+      systemPrompt.section({ name: 'harness2:overlay', order: systemPrompt.getSectionOrder('HARNESS2_OVERLAY'), text, interpolate: false })
+    }
+    const skills = agent.ctx.get('skills')
+    if (skills === undefined) throw new Error('Harness² workspace guidance requires the skill registry in this Agent scope')
+    for (const skill of overlaySkills(installed)) skills.register({ ...skill, source: 'runtime', provider: 'harness2' })
+    const authority: CandidateExecutionAuthority = {
+      // The activation grant listed the deny-only middleware; helpers still need one grant per execution.
+      approve: async (request, signal) => request.path.startsWith('plugin/') || await this.ctx.approval.request({ agent, signal, toolName: 'harness2_candidate_execute',
+        reason: `Execute isolated adopted candidate ${request.hash} entry ${request.path} with exact JSON input:\n${request.input}` }) === 'allowed-once',
+      audit: event => agent.session.append('harness2/execution', event),
+    }
+    const runtime = runtimeConfig === null ? undefined : 'backend' in runtimeConfig
+      ? new WasiCandidateRuntime(runtimeConfig, authority) : new IsolatedCandidateRuntime(runtimeConfig, authority)
+    await installCandidateResources(agent, installed, {
+      ...runtime === undefined ? {} : { runtime }, signal: this.lifecycle.signal, nativeSkills: true,
+      delegate: (path, instructions, task, signal) => this.overlayDelegate(agent, path, instructions, task, signal),
+    })
+    if (pinned === null) agent.session.append('harness2/overlay', { workspace: binding.workspace, domain: binding.domain, mode: binding.mode,
+      revision: binding.revision, candidateHash: candidateHash(tree) })
+  }
+
+  /** Adopted delegates run as ordinary managed children under the parent's normal composition and policy. */
+  private overlayDelegate(parent: Agent, path: string, instructions: string, task: string, signal: AbortSignal): Promise<string> {
+    return this.track(this.runOverlayDelegate(parent, path, instructions, task, signal))
+  }
+
+  private async runOverlayDelegate(parent: Agent, path: string, instructions: string, task: string, signal: AbortSignal): Promise<string> {
+    boundedText(task, 'delegated task', this.config.maxTaskChars)
+    const childId = SessionId(`harness2-delegate-${randomUUID()}`)
+    const timeout = new AbortController()
+    const timer = setTimeout(() => { timeout.abort(new Error('Harness² delegate timed out')) }, this.config.childTimeoutMs)
+    const control = AbortSignal.any([signal, timeout.signal, this.lifecycle.signal])
+    this.delegates.add(childId)
+    try {
+      const activation = await this.ctx.subagents.startActivation({
+        provider: this.config.provider, childId, label: `Harness² ${path}`, signal: control, delivery: 'caller', oneShot: true,
+        request: { parent, prompt: [{ type: 'text', text: `${instructions}\n\nTask:\n${task}` }], outputSchema: schema(['answer']),
+          agentOptions: { maxTokens: Math.min(this.config.maxTokensPerChild, parent.options.maxTokens ?? this.config.maxTokensPerChild) } },
+      })
+      const result = await settleActivation(activation, control)
+      if (result.stopReason !== 'completed') throw new Error(`Harness² delegate ${path} ended with ${result.stopReason}`)
+      return boundedText(record(result.structured)['answer'], 'delegated answer', this.config.maxOutputChars)
+    } finally {
+      clearTimeout(timer)
+      this.delegates.delete(childId)
+    }
+  }
+
+  private limitSteps(agent: Agent): void {
+    let admitted = 0
+    agent.ctx.on('agent/pre-step', async (_payload, next) => {
+      if (admitted >= this.config.maxStepsPerChild) return { kind: 'reject' }
+      const decision = await next()
+      if (decision.kind === 'enter') admitted += 1
+      return decision
+    })
   }
 
   private assertLive(parent: Agent): void {
@@ -351,10 +540,16 @@ export class Harness2Engine extends Service {
     if (this.ctx.agents.get(parent.id) !== parent) throw new Error('Harness² requires the exact live parent Agent')
   }
 
+  private track<T>(operation: Promise<T>): Promise<T> {
+    this.active.add(operation)
+    void operation.then(() => this.active.delete(operation), () => this.active.delete(operation))
+    return operation
+  }
+
   private async adopt(parent: Agent, preview: PreviewRecord, options: { signal: AbortSignal; callId?: ToolCallId }): Promise<number> {
     const lessons = this.domain.table('lessons')
-    const libraryKey = `${preview.mode}:${preview.domain}`
-    const current = lessons.get(libraryKey)
+    const key = libraryKey(preview.mode, preview.domain)
+    const current = lessons.get(key)
     if (current?.runId === preview.runId) return current.revision
     const signal = AbortSignal.any([options.signal, this.lifecycle.signal])
     signal.throwIfAborted()
@@ -370,7 +565,12 @@ export class Harness2Engine extends Service {
     }
     const revision = preview.baseRevision + 1
     parent.session.append('harness2/remember-request', { runId: runId(preview.runId), domain: preview.domain, revision })
-    await lessons.put(libraryKey, {
+    // History is written first: a lesson revision is never visible without its bindable candidate.
+    await this.domain.table('revisions').put(revisionKey(preview.mode, preview.domain, revision), {
+      domain: preview.domain, mode: preview.mode, revision, runId: preview.runId, candidate: preview.candidate,
+      instructions: preview.instructions, reflection: preview.reflection, adoptedAt: Date.now(),
+    })
+    await lessons.put(key, {
       runId: preview.runId, revision, instructions: preview.instructions, reflection: preview.reflection, candidate: preview.candidate,
       entries: [...current?.entries ?? [], { runId: preview.runId, task: preview.task, candidate: preview.candidate,
         reflection: preview.reflection, selected: preview.selected }].slice(-this.config.maxLibraryEntries),
@@ -396,11 +596,12 @@ export class Harness2Engine extends Service {
           runId: id, domain: completed.domain, answer: completed.answer, instructions: completed.instructions,
           reflection: completed.reflection, candidate: completed.candidate, mode: completed.mode, k: completed.k,
           selected: completed.selected, finals: completed.finals,
+          ...completed.selectionFallback === undefined ? {} : { selectionFallback: completed.selectionFallback },
           stages: completed.stages.map(stage => ({ ...stage, sessionId: SessionId(stage.sessionId) })),
         }
       }
     } else {
-      const lesson = this.domain.table('lessons').get(`${mode}:${request.domain}`)
+      const lesson = this.domain.table('lessons').get(libraryKey(mode, request.domain))
       saved = {
         runId: id, parentSession: request.parent.id, fingerprint, domain: request.domain,
         baseRevision: lesson?.revision ?? 0, candidate: this.config.baseCandidate,
@@ -450,7 +651,8 @@ export class Harness2Engine extends Service {
         stages.push(...checkpoint.stages.map(stage => ({ ...stage, label, sessionId: SessionId(stage.sessionId) })))
         return checkpoint.output
       }
-      const prompt = childPrompt(request.task, mission, evidence)
+      const fitted = fitEvidence(evidence, value => childPrompt(request.task, mission, value).length, this.config.maxEvidenceChars).evidence
+      const prompt = childPrompt(request.task, mission, fitted)
       boundedText(prompt, 'complete child message', this.config.maxEvidenceChars)
       const local: Harness2Stage[] = []
       let output: Record<string, unknown>
@@ -458,7 +660,7 @@ export class Harness2Engine extends Service {
         output = await this.child(request.parent, phase, prompt, fields, signal, local, candidate, authority)
       } catch (error) {
         if (signal.aborted || !(error instanceof ChildExecutionFailure)) throw error
-        if (fields.includes('answer')) output = { rolloutError: error.message }
+        if (fields.includes('answer')) output = { rolloutError: error.message, ...error.evidence === undefined ? {} : { executionEvidence: error.evidence } }
         else if (fields.includes('tree')) output = { proposalError: error.message }
         else throw error
       } finally {
@@ -473,7 +675,7 @@ export class Harness2Engine extends Service {
         validateOutput(output)
       } catch (error) {
         if (!fields.includes('answer') || !(error instanceof TypeError)) throw error
-        output = { rolloutError: error.message }
+        output = { rolloutError: error.message, ...typeof output['executionEvidence'] === 'string' ? { executionEvidence: output['executionEvidence'] } : {} }
       }
       const payload = { runId: id, label, phase, sessionId, stages: local, output }
       await this.domain.table('checkpoints').put(key, { ...payload, contentHash: contentDigest(payload) })
@@ -500,7 +702,11 @@ export class Harness2Engine extends Service {
           let rejection = ''
           for (let attempt = 1; attempt <= 2; attempt++) {
             const assignment = `${mission}\n${TREE_MISSION}`
-            const history = libraryEvidence(request.task, assignment, { ...evidence, domain: request.domain, rejection },
+            // Current-run evidence is clipped only as far as needed for the message to fit without history.
+            const current = fitEvidence({ ...evidence, domain: request.domain, rejection }, value => childPrompt(request.task, assignment, {
+              ...value, library: [], priorReflection: '', libraryOmitted: saved.library.length, priorReflectionOmitted: saved.reflection !== '',
+            }).length, this.config.maxEvidenceChars).evidence
+            const history = libraryEvidence(request.task, assignment, current,
               saved.library, saved.reflection, this.config.maxEvidenceChars)
             const output = await call(`improve:${label}:${attempt}`, dimension, assignment, history, ['tree', 'rationale'])
             try {
@@ -520,20 +726,26 @@ export class Harness2Engine extends Service {
       const delivered = recursion.finals.filter(final => final.error === undefined)
       let selected = delivered[0]
       if (selected === undefined) throw new Error('Harness² recursion produced no delivered final candidates')
-      if (k > 1) {
+      let selectionFallback: string | undefined
+      if (k > 1 && delivered.length > 1) {
         const alternatives = delivered.map((final, index) => ({ id: `answer-${index + 1}`, answer: final.answer }))
-        const selection = await call('select', 'select', SELECT_MISSION, { alternatives }, ['choice', 'rationale'], undefined, alternatives.map(alternative => alternative.id))
-        const index = alternatives.findIndex(alternative => alternative.id === selection['choice'])
-        const choice = delivered[index]
-        if (choice === undefined) throw new TypeError('Harness² selector returned an unknown final answer id')
-        boundedText(selection['rationale'], 'selection rationale', this.config.maxReflectionChars)
-        selected = choice
+        try {
+          const selection = await call('select', 'select', SELECT_MISSION, { alternatives }, ['choice', 'rationale'], undefined, alternatives.map(alternative => alternative.id))
+          const choice = delivered[alternatives.findIndex(alternative => alternative.id === selection['choice'])]
+          if (choice === undefined) throw new TypeError('Harness² selector returned an unknown final answer id')
+          selected = choice
+        } catch (error) {
+          // A selector failure never discards delivered work; the first delivered final is a neutral stand-in.
+          if (signal.aborted || !(error instanceof TypeError || error instanceof ChildExecutionFailure)) throw error
+          selectionFallback = error.message.slice(0, this.config.maxReflectionChars)
+        }
       }
       const reflected = await call('reflect', 'reflect', REFLECT_MISSION, { ...recursion, selected: selected.label }, ['lesson'])
       const reflection = boundedText(reflected['lesson'], 'reflection', this.config.maxReflectionChars)
       signal.throwIfAborted()
       orderStages()
       result = { runId: id, domain: request.domain, mode, k, selected: selected.label, finals: recursion.finals,
+        ...selectionFallback === undefined ? {} : { selectionFallback },
         answer: selected.answer, candidate: selected.candidate,
         instructions: candidateInstructions(selected.candidate), reflection, stages }
     } catch (error) {
@@ -591,11 +803,8 @@ export class Harness2Engine extends Service {
     const timeout = new AbortController()
     const timer = setTimeout(() => { timeout.abort(new ChildExecutionFailure(`Harness² ${phase} timed out`)) }, this.config.childTimeoutMs)
     const childSignal = AbortSignal.any([signal, timeout.signal])
-    let activation: SubagentActivation | undefined
-    let disposal: Promise<void> | undefined
-    let onAbort: (() => void) | undefined
     const parentTrace = this.pending.get(parent.id)?.trace
-    const trace = parentTrace ?? (candidate === undefined ? undefined : { events: [], chars: 0, overflow: false })
+    const trace = parentTrace ?? (candidate === undefined ? undefined : createTrace(this.config.maxTrajectoryChars))
     let release = () => {}
     try {
       release = this.pending.has(parent.id) ? () => {} : await this.acquireChildSlot(childSignal)
@@ -606,7 +815,7 @@ export class Harness2Engine extends Service {
         candidate, signal: childSignal, stages, trace })
       childSignal.throwIfAborted()
       const maxDepth = this.ctx.subagents.resolveMaxDepth()
-      activation = await this.ctx.subagents.startActivation({
+      const activation = await this.ctx.subagents.startActivation({
         provider: this.config.provider, childId, label: `Harness² ${phase}`, signal: childSignal, delivery: 'caller', oneShot: true,
         request: {
           parent, prompt: [{ type: 'text', text: prompt }], outputSchema: schema(fields),
@@ -615,37 +824,24 @@ export class Harness2Engine extends Service {
         },
       })
       stages.push({ phase, sessionId: childId })
-      const owned = activation
-      const dispose = (): Promise<void> => (disposal ??= owned.dispose())
-      const aborted = Promise.withResolvers<never>()
-      const settled = Promise.race([owned.result, aborted.promise])
-      onAbort = () => {
-        // Activation signals own startup only; after publication the caller
-        // must stop and drain the exact returned activation explicitly.
-        void dispose().then(() => { aborted.reject(childSignal.reason) }, (error: unknown) => { aborted.reject(error) })
-      }
-      childSignal.addEventListener('abort', onAbort, { once: true })
-      if (childSignal.aborted) onAbort()
-      const result = await settled
+      const result = await settleActivation(activation, childSignal)
       childSignal.throwIfAborted()
       if (result.stopReason !== 'completed') throw new ChildExecutionFailure(`Harness² ${phase} ended with ${result.stopReason}`)
-      if (trace?.overflow) throw new Error(`Harness² complete execution trajectory exceeds ${this.config.maxTrajectoryChars} characters`)
       let output: Record<string, unknown>
       try {
         output = record(result.structured)
       } catch (error) {
         throw new ChildExecutionFailure('Harness² child returned invalid structured output', { cause: error })
       }
-      return { ...output, ...trace === undefined ? {} : { executionEvidence: trace.events.join('\n') } }
+      return { ...output, ...trace === undefined ? {} : { executionEvidence: renderTrace(trace) } }
+    } catch (error) {
+      // Nested delegates share the rollout trace; only the owning rollout reports it.
+      if (error instanceof ChildExecutionFailure && trace !== undefined && parentTrace === undefined) error.evidence ??= renderTrace(trace)
+      throw error
     } finally {
       clearTimeout(timer)
-      if (onAbort !== undefined) childSignal.removeEventListener('abort', onAbort)
       this.pending.delete(childId)
-      try {
-        if (activation !== undefined) await (disposal ??= activation.dispose())
-      } finally {
-        release()
-      }
+      release()
     }
   }
 }

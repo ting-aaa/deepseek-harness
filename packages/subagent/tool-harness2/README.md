@@ -42,6 +42,10 @@ Answer rollouts and their candidate delegates may inspect inputs with the config
 
 A preview does not require the user to name Harness². Generated execution still requires per-execution approval. Before adopting a new preview, the service requests one-time approval through DSH’s user-approval service, showing its domain, instructions, and reflection. Missing approval handling, rejection, cancellation, and a policy that disallows asking all fail closed without accepting a lesson.
 
+### Apply to the workspace
+
+`harness2_activate` binds a remembered revision (default: latest) of one `domain` and `mode` to the caller’s workspace after one-time approval. New top-level sessions in that workspace receive its instructions as lower-trust guidance, its skills through the normal skill tool, and its delegates and isolated helpers; the current conversation is unchanged. Passing an older `revision` rolls back. `harness2_status` lists the binding and remembered revisions; `harness2_deactivate` removes the binding.
+
 -----
 
 <a id="understand-the-implementation"></a>
@@ -76,7 +80,7 @@ Read these pages for task preparation and engine-level guarantees.
 
 #### What the model sees
 
-The generated [Harness² tool schemas](../../../docs/tool-catalog.md#deepseek-aidsh-tool-harness2) define `harness2` and `harness2_remember`, including bounded exploration and approval instructions. This package adds no system-prompt section.
+The generated [Harness² tool schemas](../../../docs/tool-catalog.md#deepseek-aidsh-tool-harness2) define `harness2`, `harness2_remember`, `harness2_activate`, `harness2_deactivate`, and `harness2_status`, including bounded exploration and approval instructions. This package adds no system-prompt section; the [engine](../harness2/README.md#apply-adopted-guidance) adds the workspace overlay.
 
 #### Token effect
 
@@ -104,10 +108,10 @@ Tool results append after the parent request prefix. Remembering changes later c
 
 <a id="known-limitations-and-deferred-work"></a>
 
-The tools expose only the preview-and-remember workflow.
+The tools expose preview, remember, and workspace activation.
 
 - **No unattended adoption** — a new lesson requires the configured approval answerer to grant the exact request; a headless composition without an answerer cannot remember it.
-- **No lesson browser or management tools** — there is no list, delete, rollback, or cross-session adoption operation.
+- **No lesson deletion** — remembered revisions can be listed, activated, and rolled back per workspace, but not deleted or edited.
 - **Generic presentation** — child evidence is referenced by Session id rather than a dedicated comparison panel.
 
 <a id="dev-note"></a>

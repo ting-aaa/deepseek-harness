@@ -9,8 +9,8 @@
   en: 6cc2cd9ced70bb09
   zh: 1c0e6cb4ba2ed637
 /tool-schema-catalog/tool-package-map:
-  en: a97362af97a1c503
-  zh: b9469ea52de41947
+  en: b3fb9961a46f1e3e
+  zh: aa31bc3db040b9eb
 /tool-schema-catalog/deepseek-ai-dsh-plugin-manager:
   en: e0143916bb634762
   zh: e0143916bb634762
@@ -211,10 +211,19 @@
   zh: 3f0c58c59cac066a
 /tool-schema-catalog/deepseek-ai-dsh-tool-harness2/harness2:
   en: d0877c8494ec92a8
-  zh: 226ccd7d7592fabe
+  zh: ad3b63a69af7aaca
+/tool-schema-catalog/deepseek-ai-dsh-tool-harness2/harness2-activate:
+  en: c6995dffd6aa4ad0
+  zh: ddc92278118943b2
+/tool-schema-catalog/deepseek-ai-dsh-tool-harness2/harness2-deactivate:
+  en: d521116844a9542a
+  zh: 987dcbdeebf00234
 /tool-schema-catalog/deepseek-ai-dsh-tool-harness2/harness2-remember:
-  en: 62514212726f807c
-  zh: 9137c752a780bed8
+  en: 3d929e0019674e3d
+  zh: 426dd73e3398012a
+/tool-schema-catalog/deepseek-ai-dsh-tool-harness2/harness2-status:
+  en: 1b2c7bb0ffcf13b5
+  zh: 9b9031693cda544d
 /tool-schema-catalog/deepseek-ai-dsh-tool-ralph:
   en: 45bd083870e2c92d
   zh: 45bd083870e2c92d

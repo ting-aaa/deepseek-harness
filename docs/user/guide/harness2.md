@@ -65,7 +65,7 @@ To retain an accepted result, ask the same parent conversation to call `harness2
 <a id="reuse"></a>
 ## 4. Reuse a domain lesson
 
-A later `harness2` call with the same mode and domain can use the accepted guidance and lesson. Ordinary DSH tasks do not gain this context automatically. Repeating the currently accepted run is harmless; a preview based on an older library revision is rejected after another result has been remembered. Request a new preview against the current lesson instead of overwriting it.
+A later `harness2` call with the same mode and domain can use the accepted guidance and lesson. Ordinary DSH tasks gain it only after you ask the agent to call `harness2_activate` and approve the binding; new sessions in this workspace then receive the guidance, skills, and delegates. Ask for `harness2_status` to see revisions, `harness2_activate` with an older `revision` to roll back, or `harness2_deactivate` to stop. Repeating the currently accepted run is harmless; a preview based on an older library revision is rejected after another result has been remembered. Request a new preview against the current lesson instead of overwriting it.
 
 Each child receives only whole saved experiences and reflection that fit its message budget. Its evidence reports omitted history; the saved library remains intact. A growing library therefore does not require deleting accepted lessons to start a small new task.
 

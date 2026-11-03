@@ -937,6 +937,7 @@ export const LINK_MAP: Readonly<Record<string, string>> = {
   WorkflowStartRequest: 'workflow.md',
   Harness2Request: 'harness2.md',
   Harness2Result: 'harness2.md',
+  Harness2Binding: 'harness2.md',
   Harness2RunId: 'harness2.md',
   Harness2Stage: 'harness2.md',
   ProjectionDefinition: 'session-projection.md',

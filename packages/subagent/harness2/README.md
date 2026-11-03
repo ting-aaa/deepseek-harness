@@ -100,7 +100,7 @@ The portable backend independently bounds writable filesystem bytes and entries,
 
 `runtime: null` disables generated execution; unavailable isolation never falls back to host execution. An explicit legacy Linux runtime configuration remains supported and requires non-root bubblewrap user/network namespaces, configured runtime paths and limits, and a deployment-verified memory-bounded container or cgroup. That backend's virtual-address-space limit does not bound aggregate RSS or kernel memory.
 
-Rollout evidence includes logged assistant messages and tool calls/results, including returned artifacts, within `maxTrajectoryChars`. Proposals and composition receive that trajectory; final selection receives anonymous delivered answers only. Overflow fails rather than silently truncating the execution record.
+Rollout evidence includes logged assistant messages and tool calls/results, including returned artifacts, within `maxTrajectoryChars`. Proposals and composition receive that trajectory; final selection receives anonymous delivered answers only. A longer trajectory keeps its earliest and newest events and marks the omitted middle; it never stops the run. A failed rollout keeps the trajectory observed before the failure.
 
 ### Persistence and failures
 
@@ -108,9 +108,24 @@ A completed preview stores its task, composed result, parent identity, library r
 
 Previewing does not accept a lesson. The separate remember operation requires the originating live parent, an approval answerer’s one-time grant, and a current library revision; the [subsystem reference](../../../docs/subsystems/harness2.md#run-and-lesson-ownership) owns these rules. Domain labels are trimmed, case-sensitive, and limited to 128 characters. Domains share the configured storage instance and are not workspace or user authorization scopes. Each mode/domain library retains up to `maxLibraryEntries` explicitly accepted task experiences, including full trees. `baseCandidate` remains the fixed baseline; library experiences are separate improvement evidence, snapshotted for resume.
 
-Child evidence keeps the whole prior reflection first when it fits, then admits the newest complete historical experiences that fit the complete serialized message budget, retaining their chronological order. `libraryOmitted` and `priorReflectionOmitted` report omitted history. This does not truncate or delete stored lessons; current-run evidence remains untrimmed and can still exceed a deployment limit.
+Child evidence keeps the whole prior reflection first when it fits, then admits the newest complete historical experiences that fit the complete serialized message budget, retaining their chronological order. `libraryOmitted` and `priorReflectionOmitted` report omitted history. This does not truncate or delete stored lessons. When current-run evidence alone exceeds the budget, execution evidence, trajectories, and then answers are clipped in the middle, longest first, until the message fits; candidate trees are never clipped. A message that still cannot fit stops the run.
 
-An invalid candidate tree receives one retry; two invalid proposals inherit the current candidate with an explicit reason. Failed answer rollouts remain error evidence for subsequent improvement; if every final fails, no successful preview is produced. Cancellation, trajectory overflow, and unrecoverable stage or storage errors stop the run. Durable stage checkpoints permit the same parent to continue with the same task, domain, mode, k, and deployment configuration; this is not cold resume of a child. Cancellation and unload drain managed children. A final write already in progress cannot be rolled back; a successful commit returns success.
+An invalid candidate tree receives one retry; two invalid proposals inherit the current candidate with an explicit reason. Failed answer rollouts remain error evidence for subsequent improvement; if every final fails, no successful preview is produced. When selection fails or names an unknown answer, the first delivered final is returned with `selectionFallback`. Cancellation and unrecoverable stage or storage errors stop the run. A pending adoption does not count toward `maxConcurrentRuns`. Durable stage checkpoints permit the same parent to continue with the same task, domain, mode, k, and deployment configuration; this is not cold resume of a child. Cancellation and unload drain managed children. A final write already in progress cannot be rolled back; a successful commit returns success.
+
+<a id="apply-adopted-guidance"></a>
+### Apply adopted guidance
+
+Remembering also records the complete candidate as a numbered revision of its mode and domain. `activate` binds one revision to the caller’s workspace — the nearest enclosing Git root, otherwise the session directory — after a one-time approval that shows the instructions and resources. The binding applies to top-level Agents created later in that workspace; the binding conversation, subagents, and Harness² children are unchanged. Binding an older revision rolls back; `deactivate` removes the binding, and `status` lists the binding and revisions.
+
+| Component | Bound Agent |
+|---|---|
+| Always-on files | One literal `harness2:overlay` system-prompt section, framed as lower-trust guidance below host policy, permissions, and user instructions. |
+| `skills/<name>/SKILL.md` | Runtime skills in the Agent’s scope, loaded through the normal skill tool. |
+| `sub_agents/<name>/AGENT.md` | `harness2_delegate` starts an ordinary managed child under the Agent’s normal composition and policy. |
+| `scripts/*.py` | `harness2_script` in the isolated runtime; each execution needs approval. |
+| `plugin/<name>.ts` | Deny-only before-tool middleware in the isolated runtime; the activation grant covers its executions. |
+
+With `runtime: null`, scripts and plugins are omitted and named as unavailable. Each top-level Session records its overlay decision, including an inactive decision. Resume reuses that decision and verifies the candidate hash; missing or changed recorded revisions block resume. A new Session skips a missing or invalid binding with a warning. Version 2 libraries without revision history bind their current lesson as that revision.
 
 -----
 
@@ -224,8 +239,8 @@ These constraints define the supported experiment, not a general self-modifying 
 
 - **Native adaptation, not the upstream runner** — no upstream CLI, complete plugin API, benchmark, or independent-evaluator equivalence.
 - **Bounded effort is not a price budget** — no aggregate token or currency ceiling; cleanup may extend beyond a child timeout.
-- **Explicit adoption, not automatic improvement** — only future Harness² runs in the same domain use accepted material; normal parent behavior and global configuration remain unchanged.
-- **Shared domain library** — domain labels are not tenant isolation; there is no model-facing list, forget, rollback, or domain-count retention policy.
+- **Explicit adoption and activation, not automatic improvement** — accepted material reaches ordinary Agents only through an approved workspace binding; global configuration remains unchanged, and nothing measures whether a binding helps.
+- **Shared domain library** — domain labels are not tenant isolation; revisions can be listed and rolled back per workspace, but there is no forget operation or domain-count retention policy.
 - **Conditional checkpoint resume** — only the same parent and run fingerprint can reuse stages; it does not resume children or roll back external actions.
 
 <a id="dev-note"></a>

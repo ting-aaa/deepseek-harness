@@ -42,6 +42,10 @@ kind: "package-reference"
 
 预览不要求用户点名 Harness²。生成代码执行仍需逐次审批。采纳新预览前，服务通过 DSH 用户审批服务请求一次性批准，展示领域、指令与反思。缺少审批处理、拒绝、取消或策略禁止询问时，都默认拒绝且不接受经验。
 
+### 应用到工作区
+
+`harness2_activate` 经一次性批准后，将某个 `domain` 与 `mode` 已保存的修订（默认最新）绑定到调用方所在工作区。该工作区中新建的顶层会话会获得其指令（作为低信任指导）、经普通技能工具提供的技能，以及其委派和隔离辅助脚本；当前对话不变。传入较早的 `revision` 即可回滚。`harness2_status` 列出绑定与已保存修订；`harness2_deactivate` 解除绑定。
+
 -----
 
 <a id="understand-the-implementation"></a>
@@ -76,7 +80,7 @@ kind: "package-reference"
 
 #### 模型看到的内容
 
-生成的 [Harness² 工具 schema](../../../docs/tool-catalog.zh.md#deepseek-aidsh-tool-harness2)定义 `harness2` 与 `harness2_remember`，包括有界探索与批准要求。此包不添加系统提示词片段。
+生成的 [Harness² 工具 schema](../../../docs/tool-catalog.zh.md#deepseek-aidsh-tool-harness2)定义 `harness2`、`harness2_remember`、`harness2_activate`、`harness2_deactivate` 与 `harness2_status`，包括有界探索与批准要求。此包不添加系统提示词片段；工作区叠加层由[引擎](../harness2/README.zh.md#apply-adopted-guidance)添加。
 
 #### Token 影响
 
@@ -104,10 +108,10 @@ kind: "package-reference"
 
 <a id="known-limitations-and-deferred-work"></a>
 
-工具仅暴露预览与保存工作流。
+工具暴露预览、保存与工作区激活。
 
 - **不支持无人审批采纳** — 新经验要求配置的审批答复方准许该具体请求；没有答复方的 headless 配置组合不能保存经验。
-- **没有经验浏览器或管理工具** — 不提供列出、删除、回滚或跨会话采纳操作。
+- **不能删除经验** — 已保存修订可按工作区列出、激活与回滚，但不能删除或编辑。
 - **通用展示** — 通过 Session id 引用子会话证据，不提供专用比较面板。
 
 <a id="dev-note"></a>

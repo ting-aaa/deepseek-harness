@@ -36,6 +36,8 @@ export interface Harness2Result {
   readonly mode: 'parallel' | 'sequential'
   readonly k: number
   readonly selected: string
+  /** Present when selection failed and the first delivered final stands in. */
+  readonly selectionFallback?: string | undefined
   readonly finals: readonly {
     label: string
     answer: string
@@ -56,5 +58,7 @@ declare module '@deepseek-ai/dsh-session/types' {
     'harness2/execution': { hash: string; path: string; status: 'start' | 'completed' | 'failed'; detail: string }
     /** Adoption was requested; the domain library, not this intent record, owns committed acceptance. */
     'harness2/remember-request': { runId: Harness2RunId; domain: string; revision: number }
+    /** A workspace-bound adopted revision was installed on this top-level Agent at creation. */
+    'harness2/overlay': { disabled: true } | { workspace: string; domain: string; mode: 'parallel' | 'sequential'; revision: number; candidateHash: string }
   }
 }

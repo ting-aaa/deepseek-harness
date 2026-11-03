@@ -13,6 +13,8 @@ export interface CandidateResourceOptions {
   /** Fresh bounded managed child; the engine owns its Session, budget, restrictions and drain. */
   delegate(path: string, instructions: string, task: string, signal: AbortSignal): Promise<string>
   signal: AbortSignal
+  /** Skills are registered with the native skill registry instead of the harness2_skill reader. */
+  nativeSkills?: boolean
 }
 /** Install per-Agent tools; registration effects are owned by the Agent's Cordis scope.
  * @param agent - Exact rollout child, never the parent conversation.
@@ -28,9 +30,10 @@ export async function installCandidateResources(
   if (catalog.scripts.length || catalog.plugins.length) {
     if (runtime === undefined) throw new Error('Executable Harness² candidate requires configured isolated runtime; no host fallback')
     await runtime.preflight(options.signal)
+    options.signal.throwIfAborted()
   }
   const names = [STRUCTURED_OUTPUT_TOOL]
-  if (catalog.skills.length) {
+  if (catalog.skills.length && options.nativeSkills !== true) {
     names.push('harness2_skill')
     agent.ctx.tools.register(defineTool({
       name: 'harness2_skill', description: `Read a candidate workflow on demand. Available paths: ${catalog.skills.join(', ')}`,

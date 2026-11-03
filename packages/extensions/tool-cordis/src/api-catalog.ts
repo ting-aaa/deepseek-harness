@@ -1699,6 +1699,24 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         parameters: [{ name: 'parent', description: 'exact live originating parent; another Session cannot adopt this preview.' }, { name: 'id', description: 'preview id returned by run; repeated adoption is idempotent.' }, { name: 'options', description: 'cancellation and optional originating tool call; the parent must have an open turn for approval audit.' }],
         returns: 'the committed domain-library revision; rejects if a different preview was adopted since this run began.',
       },
+      {
+        signature: 'activate(parent: Agent, request: { domain: string; mode?: \'parallel\' | \'sequential\'; revision?: number }, options: { signal: AbortSignal; callId?: ToolCallId }): Promise<Harness2Binding>',
+        description: 'Bind one adopted revision to the caller\'s workspace so later top-level Agents in that workspace receive it as lower-trust guidance, native skills, and candidate resources. The current conversation is unchanged. Requires a one-time approval grant.',
+        parameters: [{ name: 'parent', description: 'exact live Agent whose working directory selects the workspace.' }, { name: 'request', description: 'domain, optional mode (default configured mode), and optional revision (default latest).' }, { name: 'options', description: 'cancellation and optional originating tool call for approval audit.' }],
+        returns: 'the committed binding.',
+      },
+      {
+        signature: 'deactivate(parent: Agent): Promise<boolean>',
+        description: 'Remove the caller workspace\'s binding; already running Agents keep their installed guidance.',
+        parameters: [{ name: 'parent', description: 'exact live Agent whose working directory selects the workspace.' }],
+        returns: 'whether a binding was removed.',
+      },
+      {
+        signature: 'status(parent: Agent, domain?: string): { workspace: string; binding?: Harness2Binding; revisions: { domain: string; mode: \'parallel\' | \'sequential\'; revision: number; runId: string; adoptedAt: number }[] }',
+        description: 'Describe the caller workspace\'s binding and the adopted revisions available for rollback.',
+        parameters: [{ name: 'parent', description: 'exact live Agent whose working directory selects the workspace.' }, { name: 'domain', description: 'optional domain filter for listed revisions.' }],
+        returns: 'the workspace, its binding when present, and revision summaries in ascending order.',
+      },
     ],
   },
   {
@@ -6651,12 +6669,16 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export interface GrantRecord {\n    readonly kind: \'grant\';\n    readonly payload: unknown;\n}',
   },
   {
+    name: 'Harness2Binding',
+    declaration: 'export interface Harness2Binding {\n    readonly workspace: string;\n    readonly domain: string;\n    readonly mode: \'parallel\' | \'sequential\';\n    readonly revision: number;\n    readonly boundAt: number;\n}',
+  },
+  {
     name: 'Harness2Request',
     declaration: 'export interface Harness2Request {\n    readonly parent: Agent;\n    readonly task: string;\n    readonly domain: string;\n    readonly signal: AbortSignal;\n    readonly mode?: \'parallel\' | \'sequential\';\n    readonly k?: number;\n    readonly resumeRunId?: Harness2RunId;\n}',
   },
   {
     name: 'Harness2Result',
-    declaration: 'export interface Harness2Result {\n    readonly runId: Harness2RunId;\n    readonly domain: string;\n    readonly answer: string;\n    readonly instructions: string;\n    readonly reflection: string;\n    readonly candidate: CandidateTree;\n    readonly mode: \'parallel\' | \'sequential\';\n    readonly k: number;\n    readonly selected: string;\n    readonly finals: readonly {\n        label: string;\n        answer: string;\n        candidate: CandidateTree;\n        error?: string | undefined;\n        trajectory?: string | undefined;\n    }[];\n    readonly stages: readonly Harness2Stage[];\n}',
+    declaration: 'export interface Harness2Result {\n    readonly runId: Harness2RunId;\n    readonly domain: string;\n    readonly answer: string;\n    readonly instructions: string;\n    readonly reflection: string;\n    readonly candidate: CandidateTree;\n    readonly mode: \'parallel\' | \'sequential\';\n    readonly k: number;\n    readonly selected: string;\n    readonly selectionFallback?: string | undefined;\n    readonly finals: readonly {\n        label: string;\n        answer: string;\n        candidate: CandidateTree;\n        error?: string | undefined;\n        trajectory?: string | undefined;\n    }[];\n    readonly stages: readonly Harness2Stage[];\n}',
   },
   {
     name: 'Harness2Stage',

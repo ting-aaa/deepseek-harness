@@ -18,6 +18,7 @@ class NativeModel extends LlmAdapter {
   candidateText: string | undefined
   invalidProposals = false
   failReflection = false
+  answerPadding = 0
   override async *stream(options: GenerateOptions): AsyncIterable<StreamChunk> {
     if (this.adoptRunId !== undefined) {
       const id = this.adoptRunId
@@ -44,7 +45,7 @@ class NativeModel extends LlmAdapter {
     } else if (content.includes('Assignment:\nProduce the best')) {
       this.solverCalls += 1
       if (this.failSolverCalls.has(this.solverCalls)) throw new Error('scripted dead rollout')
-      output = { answer: `Observed answer ${this.requests.length}.` }
+      output = { answer: `Observed answer ${this.requests.length}.${'x'.repeat(this.answerPadding)}` }
     } else {
       this.proposals += 1
       output = { tree: this.invalidProposals ? '{invalid' : JSON.stringify({ 'systemprompt.md': this.candidateText ?? `Candidate ${this.proposals}.` }), rationale: 'Derived from supplied evidence.' }
@@ -160,22 +161,21 @@ it('persists multiple adopted trees as mode-specific evidence without replacing 
 })
 
 
-it('does not checkpoint an invalid selector answer and can retry selection without recomputing candidates', async () => {
+it('does not checkpoint an invalid selector answer and falls back to the first delivered final', async () => {
   const model = new NativeModel()
   model.selectionChoice = 'base1'
   const { ctx, parent, path } = await bootHarness(model)
   const request = { parent, task: 'Analyze.', domain: 'selection-retry', k: 2, signal: signal() }
-  await expect(ctx.harness2.run(request)).rejects.toThrow('unknown final answer id')
-  const id = Harness2RunId(String(storedRecords(path, 'runs')[0]!.runId))
+  const result = await ctx.harness2.run(request)
+  expect(result.selected).toBe('agg1')
+  expect(result.selectionFallback).toContain('unknown final answer id')
   expect(storedRecords(path, 'checkpoints').some(row => row.label === 'select')).toBe(false)
-  expect(storedRecords(path, 'previews')).toEqual([])
+  expect(storedRecords(path, 'previews')[0]!.selectionFallback).toBe(result.selectionFallback)
   expect(model.proposals).toBe(6)
   const calls = model.requests.length
-  model.selectionChoice = 'answer-2'
-  const result = await ctx.harness2.run({ ...request, resumeRunId: id })
-  expect(result.selected).toBe('agg2')
-  expect(model.requests).toHaveLength(calls + 2)
-  expect(model.proposals).toBe(6)
+  const resumed = await ctx.harness2.run({ ...request, resumeRunId: result.runId })
+  expect(resumed.selectionFallback).toBe(result.selectionFallback)
+  expect(model.requests).toHaveLength(calls)
 })
 
 it('rejects persisted preview content changes instead of reusing a mismatched content hash', async () => {
@@ -210,4 +210,28 @@ it('retains failed baseline evidence, continues surviving runs, and excludes a f
   expect(result.answer).toBe(delivered[0]!.answer)
   const proposals = model.requests.filter(request => JSON.stringify(request.messages).includes('Assignment:\\nPropose'))
   expect(JSON.stringify(proposals)).toContain('Harness² baseline ended with error')
+})
+
+it('bounds long trajectories instead of stopping the run', async () => {
+  const model = new NativeModel()
+  model.answerPadding = 2000
+  const { ctx, parent } = await bootHarness(model, { maxTrajectoryChars: 600 })
+  const result = await ctx.harness2.run({ parent, task: 'Analyze.', domain: 'long-trajectory', signal: signal() })
+  expect(result.finals[0]!.trajectory!.length).toBeLessThanOrEqual(600)
+  expect(result.finals[0]!.trajectory).toContain('chars omitted')
+})
+
+it.each(['parallel', 'sequential'] as const)('clips oversized %s current-run evidence so improvement and reflection still run', async (mode) => {
+  const model = new NativeModel()
+  model.answerPadding = 3000
+  const { ctx, parent } = await bootHarness(model, { maxEvidenceChars: 9000 })
+  const result = await ctx.harness2.run({ parent, task: 'Analyze.', domain: 'large-evidence', mode, k: 2, signal: signal() })
+  expect(model.proposals).toBe(6)
+  expect(result.reflection).toBe('Observed evidence only; no external evaluation.')
+  const prompts = model.requests.flatMap(request => request.messages.flatMap(message => message.role === 'user'
+    ? message.content.flatMap(block => block.type === 'text' && block.text.startsWith('This is a bounded Harness² experiment') ? [block.text] : [])
+    : []))
+  expect(prompts.length).toBe(model.requests.length)
+  for (const prompt of prompts) expect(prompt.length).toBeLessThanOrEqual(9000)
+  expect(prompts.some(prompt => prompt.includes('chars omitted'))).toBe(true)
 })

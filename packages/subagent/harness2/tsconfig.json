@@ -43,6 +43,18 @@
     },
     {
       "path": "../../interaction/user-approval"
+    },
+    {
+      "path": "../../core/system-prompt"
+    },
+    {
+      "path": "../../skill/skill"
+    },
+    {
+      "path": "../../session/working-directory"
+    },
+    {
+      "path": "../../session/session-projection"
     }
   ]
 }

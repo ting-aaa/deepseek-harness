@@ -1624,8 +1624,8 @@ export interface Config {
 
 ## `@deepseek-ai/dsh-harness2`
 
-- `inject`: `agents` · `subagents` · `tools` · `storageDomain` · `approval`
-- `source`: [`packages/subagent/harness2/src/index.ts:41`](../packages/subagent/harness2/src/index.ts)
+- `inject`: `agents` · `subagents` · `tools` · `storageDomain` · `approval` · `workingDirectory` · `sessionProjections` · `systemPrompt` · `skills`
+- `source`: [`packages/subagent/harness2/src/index.ts:51`](../packages/subagent/harness2/src/index.ts)
 
 ```ts config-catalog
 /** Deployment-owned budgets; the tools cannot raise any of these limits. */
@@ -3900,7 +3900,7 @@ export interface Config {
 
 ## `@deepseek-ai/dsh-system-prompt`
 
-- `source`: [`packages/core/system-prompt/src/index.ts:265`](../packages/core/system-prompt/src/index.ts)
+- `source`: [`packages/core/system-prompt/src/index.ts:267`](../packages/core/system-prompt/src/index.ts)
 
 ```ts config-catalog
 /** Plugin config: the deployment-authored fragment of the system prompt (see {@link Config.personaPrefix} for its contract). */

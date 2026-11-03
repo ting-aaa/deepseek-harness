@@ -31,7 +31,9 @@ The service owns the bounded refinement algorithm, child lifetime, audit events,
 ```text
 harness2 tool -> ctx.harness2 -> managed DSH child sessions
                            -> storageDomain: runs and domain lessons
-harness2_remember ---------> explicit domain-library update
+harness2_remember ---------> explicit domain-library update and revision
+harness2_activate ---------> approved workspace binding
+agent/created (top-level) -> overlay: prompt section, skills, resources
 ```
 
 The service uses the existing [subagent](subagent.md), [tool execution](tools.md), and [storage](storage.md) APIs. Child model selection and logging remain DSH-owned. The [algorithm description](../../packages/subagent/harness2/README.md#understand-the-implementation) owns the individual phases and upstream attribution.
@@ -43,7 +45,7 @@ The service uses the existing [subagent](subagent.md), [tool execution](tools.md
 
 A run belongs to its initiating parent Session and a caller-selected domain. The preview retains its source library revision, execution evidence, composed guidance, and reflection. A stored preview does not itself change the domain library.
 
-Only the originating parent can remember the preview. A new adoption requires a one-time grant from the user-approval service during an open parent turn; missing or refused approval does not update the library. Repeating the currently accepted run is idempotent; a different run based on a stale library revision cannot overwrite a newer lesson. Accepted guidance and reflection are available to later Harness² runs in that domain, not injected into ordinary conversations or global configuration.
+Only the originating parent can remember the preview. A new adoption requires a one-time grant from the user-approval service during an open parent turn; missing or refused approval does not update the library. Repeating the currently accepted run is idempotent; a different run based on a stale library revision cannot overwrite a newer lesson. Accepted guidance and reflection are available to later Harness² runs in that domain. They reach ordinary conversations only after a separately approved workspace binding, and only Agents created later in that workspace; global configuration is unchanged. The [package reference](../../packages/subagent/harness2/README.md#apply-adopted-guidance) owns the overlay mapping.
 
 Domain storage owns durable run and lesson records; child Session logs own model-visible requests and responses. Native `harness2/*` Session events describe computation and adoption intent, not successful storage commits. Persistence failure is not evidence that a lesson was accepted. Cancellation cannot roll back a final durable write already in progress; a successful commit returns success. Durable stage checkpoints can resume an interrupted run only with the same parent and run fingerprint.
 
@@ -93,6 +95,8 @@ interface Harness2Result {
   readonly mode: 'parallel' | 'sequential'
   readonly k: number
   readonly selected: string
+  /** Present when selection failed and the first delivered final stands in. */
+  readonly selectionFallback?: string | undefined
   readonly finals: readonly {
     label: string
     answer: string
@@ -108,6 +112,20 @@ interface Harness2Result {
 
 <a id="trust-and-model-history"></a>
 ## Trust and model history
+
+The workspace binding selects an adopted revision for newly created top-level Agents. Its Session decision is retained on resume.
+
+```ts type-equiv
+/** One workspace's explicitly approved candidate revision. */
+interface Harness2Binding {
+  /** Absolute workspace root: the nearest enclosing Git root, otherwise the session directory. */
+  readonly workspace: string
+  readonly domain: string
+  readonly mode: 'parallel' | 'sequential'
+  readonly revision: number
+  readonly boundAt: number
+}
+```
 
 Proposals, probe reports, and saved lessons remain lower-trust model outputs, not replacements for host policy. Answer rollouts install validated native candidate resources; they and their candidate delegates receive configured read-only task tools captured from the initiating parent. The default task-tool allowlist is `read`, `read_image`, `glob`, `grep`, `web_search`, and `web_fetch`; only a subset is accepted, and `readTools: []` disables it. Proposal, composition, selection, and reflection stages receive no parent task tools. Admission is rechecked at each child step; dispatch also checks captured definition identity and the live parent’s guards. Speculative stages receive no parent shell, write, edit, or change-application tools. Scripts and middleware use the built-in portable WASI runtime and require per-execution approval addressed to the initiating parent; `runtime: null` disables them. The [package reference](../../packages/subagent/harness2/README.md#use-this-package) owns the complete capabilities and limits.
 
@@ -150,6 +168,32 @@ run(request: Harness2Request): Promise<Harness2Result>
  * @returns the committed domain-library revision; rejects if a different preview was adopted since this run began.
  */
 remember(parent: Agent, id: Harness2RunId, options: { signal: AbortSignal; callId?: ToolCallId }): Promise<number>
+
+/**
+ * Bind one adopted revision to the caller's workspace so later top-level Agents in that
+ * workspace receive it as lower-trust guidance, native skills, and candidate resources.
+ * The current conversation is unchanged. Requires a one-time approval grant.
+ * @param parent - exact live Agent whose working directory selects the workspace.
+ * @param request - domain, optional mode (default configured mode), and optional revision (default latest).
+ * @param options - cancellation and optional originating tool call for approval audit.
+ * @returns the committed binding.
+ */
+activate(parent: Agent, request: { domain: string; mode?: 'parallel' | 'sequential'; revision?: number }, options: { signal: AbortSignal; callId?: ToolCallId }): Promise<Harness2Binding>
+
+/**
+ * Remove the caller workspace's binding; already running Agents keep their installed guidance.
+ * @param parent - exact live Agent whose working directory selects the workspace.
+ * @returns whether a binding was removed.
+ */
+deactivate(parent: Agent): Promise<boolean>
+
+/**
+ * Describe the caller workspace's binding and the adopted revisions available for rollback.
+ * @param parent - exact live Agent whose working directory selects the workspace.
+ * @param domain - optional domain filter for listed revisions.
+ * @returns the workspace, its binding when present, and revision summaries in ascending order.
+ */
+status(parent: Agent, domain?: string): { workspace: string; binding?: Harness2Binding; revisions: { domain: string; mode: 'parallel' | 'sequential'; revision: number; runId: string; adoptedAt: number }[] }
 ```
 
 Types: [Agent](core.md) · [ToolCallId](core.md)

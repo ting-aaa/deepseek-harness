@@ -31,7 +31,9 @@ description: "原生 Harness² 优化：子会话隔离、运行证据与显式�
 ```text
 harness2 tool -> ctx.harness2 -> managed DSH child sessions
                            -> storageDomain: runs and domain lessons
-harness2_remember ---------> explicit domain-library update
+harness2_remember ---------> explicit domain-library update and revision
+harness2_activate ---------> approved workspace binding
+agent/created (top-level) -> overlay: prompt section, skills, resources
 ```
 
 服务使用现有 [subagent](subagent.zh.md)、[工具执行](tools.zh.md)和[存储](storage.zh.md) API。子会话的模型选择与日志仍由 DSH 负责。[算法说明](../../packages/subagent/harness2/README.zh.md#understand-the-implementation)负责各阶段与上游归属说明。
@@ -43,7 +45,7 @@ harness2_remember ---------> explicit domain-library update
 
 一次运行归属于发起它的父 Session 以及调用方选择的领域。预览保留其来源经验库修订、执行证据、组合指导与反思。存储预览本身不会改变领域经验库。
 
-只有原始父会话可以保存该预览。新的采纳要求在父会话轮次进行期间获得用户审批服务的一次性准许；审批缺失或被拒绝不会更新经验库。重复当前已接受的运行是幂等操作；基于陈旧经验库修订的另一运行不能覆盖较新的经验。已接受的指导和反思可供后续同领域 Harness² 运行使用，不会注入普通对话或全局配置。
+只有原始父会话可以保存该预览。新的采纳要求在父会话轮次进行期间获得用户审批服务的一次性准许；审批缺失或被拒绝不会更新经验库。重复当前已接受的运行是幂等操作；基于陈旧经验库修订的另一运行不能覆盖较新的经验。已接受的指导和反思可供后续同领域 Harness² 运行使用。它们只有在另行批准工作区绑定后才会作用于普通对话，且只作用于之后在该工作区创建的 Agent；全局配置不变。叠加映射见[包参考](../../packages/subagent/harness2/README.zh.md#apply-adopted-guidance)。
 
 领域存储负责持久运行记录与经验记录；子 Session 日志负责模型可见的请求和响应。原生 `harness2/*` Session 事件描述计算与采纳意图，不代表存储提交成功。持久化失败不能视为经验已获接受的证据。取消不能回滚已开始的最终持久写入；提交成功即返回成功。持久阶段检查点仅允许相同父会话与运行指纹继续中断的运行。
 
@@ -93,6 +95,8 @@ interface Harness2Result {
   readonly mode: 'parallel' | 'sequential'
   readonly k: number
   readonly selected: string
+  /** Present when selection failed and the first delivered final stands in. */
+  readonly selectionFallback?: string | undefined
   readonly finals: readonly {
     label: string
     answer: string
@@ -108,6 +112,20 @@ interface Harness2Result {
 
 <a id="trust-and-model-history"></a>
 ## 信任与模型历史
+
+工作区绑定为新创建的顶层 Agent 选择已采纳修订。Session 的决定在恢复时保留。
+
+```ts type-equiv
+/** One workspace's explicitly approved candidate revision. */
+interface Harness2Binding {
+  /** Absolute workspace root: the nearest enclosing Git root, otherwise the session directory. */
+  readonly workspace: string
+  readonly domain: string
+  readonly mode: 'parallel' | 'sequential'
+  readonly revision: number
+  readonly boundAt: number
+}
+```
 
 提案、探测报告和已保存经验仍是低信任模型产物，不替换宿主策略。答案 rollout 安装经校验的原生候选资源；它们与其候选委派会获得配置中允许、从发起父 Agent 捕获的只读任务工具。默认允许 `read`、`read_image`、`glob`、`grep`、`web_search` 和 `web_fetch`；只接受其子集，`readTools: []` 可禁用。提案、合成、选择与反思阶段不获得父任务工具。每个子步骤重新检查准入；派发时还检查捕获的定义身份和实时父 Agent 的守卫。推测阶段不会获得父 Agent 的 shell、写入、编辑或应用修改工具。脚本和中间件使用内置可移植 WASI 运行时，并逐次向发起父 Agent 请求执行审批；`runtime: null` 会禁用它们。完整能力与限制见[包参考](../../packages/subagent/harness2/README.zh.md#use-this-package)。
 
@@ -150,6 +168,32 @@ run(request: Harness2Request): Promise<Harness2Result>
  * @returns the committed domain-library revision; rejects if a different preview was adopted since this run began.
  */
 remember(parent: Agent, id: Harness2RunId, options: { signal: AbortSignal; callId?: ToolCallId }): Promise<number>
+
+/**
+ * Bind one adopted revision to the caller's workspace so later top-level Agents in that
+ * workspace receive it as lower-trust guidance, native skills, and candidate resources.
+ * The current conversation is unchanged. Requires a one-time approval grant.
+ * @param parent - exact live Agent whose working directory selects the workspace.
+ * @param request - domain, optional mode (default configured mode), and optional revision (default latest).
+ * @param options - cancellation and optional originating tool call for approval audit.
+ * @returns the committed binding.
+ */
+activate(parent: Agent, request: { domain: string; mode?: 'parallel' | 'sequential'; revision?: number }, options: { signal: AbortSignal; callId?: ToolCallId }): Promise<Harness2Binding>
+
+/**
+ * Remove the caller workspace's binding; already running Agents keep their installed guidance.
+ * @param parent - exact live Agent whose working directory selects the workspace.
+ * @returns whether a binding was removed.
+ */
+deactivate(parent: Agent): Promise<boolean>
+
+/**
+ * Describe the caller workspace's binding and the adopted revisions available for rollback.
+ * @param parent - exact live Agent whose working directory selects the workspace.
+ * @param domain - optional domain filter for listed revisions.
+ * @returns the workspace, its binding when present, and revision summaries in ascending order.
+ */
+status(parent: Agent, domain?: string): { workspace: string; binding?: Harness2Binding; revisions: { domain: string; mode: 'parallel' | 'sequential'; revision: number; runId: string; adoptedAt: number }[] }
 ```
 
 Types: [Agent](core.zh.md) · [ToolCallId](core.zh.md)

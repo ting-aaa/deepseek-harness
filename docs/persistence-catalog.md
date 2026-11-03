@@ -43,6 +43,7 @@ The [format references](persistence-changes/historical-formats/README.md) cover 
 | `event:goal/change` | event | `763c8a20af487263a0080548274f7437ef4a86e0ba8769127d1ced10a72c664d` | [`{ type: "goal/change" }`](#persistence-type-sha256-763c8a20af487263a0080548274f7437ef4a86e0ba8769127d1ced10a72c664d) |
 | `event:harness2/end` | event | `442d4fa957723ae7c823c01881d972df869e520765ee0e34169eae51966b7f2c` | [`{ type: "harness2/end" }`](#persistence-type-sha256-442d4fa957723ae7c823c01881d972df869e520765ee0e34169eae51966b7f2c) |
 | `event:harness2/execution` | event | `88b78649a4ec6791427750e6a68063d801951dfecda94a9ae0b3df512c7966ff` | [`{ type: "harness2/execution" }`](#persistence-type-sha256-88b78649a4ec6791427750e6a68063d801951dfecda94a9ae0b3df512c7966ff) |
+| `event:harness2/overlay` | event | `d8b80b0836c7c267c05d6bb9d2e5a84ee736d6cfc18bef9c514a64934cdf78df` | [`{ type: "harness2/overlay" }`](#persistence-type-sha256-d8b80b0836c7c267c05d6bb9d2e5a84ee736d6cfc18bef9c514a64934cdf78df) |
 | `event:harness2/remember-request` | event | `e65ad4343443164858c3b33843d2d2fd3b08caa3ebf0fc6ca932a0166c35ce32` | [`{ type: "harness2/remember-request" }`](#persistence-type-sha256-e65ad4343443164858c3b33843d2d2fd3b08caa3ebf0fc6ca932a0166c35ce32) |
 | `event:harness2/start` | event | `515c38856c278189f1d3efdba6f602987fb78cb3cb58f609196f25ff2676b131` | [`{ type: "harness2/start" }`](#persistence-type-sha256-515c38856c278189f1d3efdba6f602987fb78cb3cb58f609196f25ff2676b131) |
 | `event:hook/invoked` | event | `8a6e1ec9e8db346b0e02f027db73c07a94f067a26d40c1aef1abd09c47ce7ba0` | [`{ type: "hook/invoked" }`](#persistence-type-sha256-8a6e1ec9e8db346b0e02f027db73c07a94f067a26d40c1aef1abd09c47ce7ba0) |
@@ -580,7 +581,7 @@ Source: [`packages/goal/goal/src/domain.ts:66`](../packages/goal/goal/src/domain
 
 Types: [Harness2RunId](subsystems/harness2.md)
 
-Source: [`packages/subagent/harness2/src/types.ts:54`](../packages/subagent/harness2/src/types.ts)
+Source: [`packages/subagent/harness2/src/types.ts:56`](../packages/subagent/harness2/src/types.ts)
 
 <a id="harness2execution--log-only"></a>
 
@@ -591,7 +592,18 @@ Source: [`packages/subagent/harness2/src/types.ts:54`](../packages/subagent/harn
 'harness2/execution': { hash: string; path: string; status: 'start' | 'completed' | 'failed'; detail: string }
 ```
 
-Source: [`packages/subagent/harness2/src/types.ts:56`](../packages/subagent/harness2/src/types.ts)
+Source: [`packages/subagent/harness2/src/types.ts:58`](../packages/subagent/harness2/src/types.ts)
+
+<a id="harness2overlay--log-only"></a>
+
+#### `harness2/overlay` — log-only
+
+```ts persistence-catalog
+/** A workspace-bound adopted revision was installed on this top-level Agent at creation. */
+'harness2/overlay': { disabled: true } | { workspace: string; domain: string; mode: 'parallel' | 'sequential'; revision: number; candidateHash: string }
+```
+
+Source: [`packages/subagent/harness2/src/types.ts:62`](../packages/subagent/harness2/src/types.ts)
 
 <a id="harness2remember-request--log-only"></a>
 
@@ -604,7 +616,7 @@ Source: [`packages/subagent/harness2/src/types.ts:56`](../packages/subagent/harn
 
 Types: [Harness2RunId](subsystems/harness2.md)
 
-Source: [`packages/subagent/harness2/src/types.ts:58`](../packages/subagent/harness2/src/types.ts)
+Source: [`packages/subagent/harness2/src/types.ts:60`](../packages/subagent/harness2/src/types.ts)
 
 <a id="harness2start--log-only"></a>
 
@@ -617,7 +629,7 @@ Source: [`packages/subagent/harness2/src/types.ts:58`](../packages/subagent/harn
 
 Types: [Harness2RunId](subsystems/harness2.md)
 
-Source: [`packages/subagent/harness2/src/types.ts:52`](../packages/subagent/harness2/src/types.ts)
+Source: [`packages/subagent/harness2/src/types.ts:54`](../packages/subagent/harness2/src/types.ts)
 
 ### `hook/*`
 
@@ -1989,6 +2001,14 @@ SHA-256: `7c3569069047c28eeaba8569aac9199f44cb0e36f876d65b5cbdd0e431d16538`
 
 `"harness2/execution"`
 
+<a id="persistence-type-sha256-027df4a94aacf8d75e42de2d05c6aec877a111ae155eeac9f86b29f06f5a701c"></a>
+
+### `"harness2/overlay"`
+
+SHA-256: `027df4a94aacf8d75e42de2d05c6aec877a111ae155eeac9f86b29f06f5a701c`
+
+`"harness2/overlay"`
+
 <a id="persistence-type-sha256-6fc47f58eb7ae35c071eb75888febeb6eef1eca1bf0db9bf014c2e98d3b65e3e"></a>
 
 ### `"harness2/remember-request"`
@@ -2307,6 +2327,14 @@ SHA-256: `95a3ffccbf3c8afcf9a2f3b355f724da8e07e98dc47ee741166dde7f9ea058bd`
 
 `"owner"`
 
+<a id="persistence-type-sha256-9a3a87039d589b2cb99c18e2d574f296d44c6b8a0c0ac2e7abf6b3dd1f33f238"></a>
+
+### `"parallel"`
+
+SHA-256: `9a3a87039d589b2cb99c18e2d574f296d44c6b8a0c0ac2e7abf6b3dd1f33f238`
+
+`"parallel"`
+
 <a id="persistence-type-sha256-e6411b09c1d982f789bf741ca74e2bea69df56029847f86a6148e722039ee732"></a>
 
 ### `"parent"`
@@ -2562,6 +2590,14 @@ SHA-256: `0e7b2a97f54f1afdb8cdfad1635abe9145327db539bfb69b4045c19d8c17755d`
 SHA-256: `07eccc9ea2f9b5439d76cc77d5e062936677d43f07a23da749819b0a22ee36b7`
 
 `"security-privacy-permission"`
+
+<a id="persistence-type-sha256-0400eef245a812a6e1e4e906c786773fbe8851bd138891ecd71844b9162e0dad"></a>
+
+### `"sequential"`
+
+SHA-256: `0400eef245a812a6e1e4e906c786773fbe8851bd138891ecd71844b9162e0dad`
+
+`"sequential"`
 
 <a id="persistence-type-sha256-4f507598cf476214aa7646ce7841a7064a9dcb05d0a1eaaefaf79c2b738f160f"></a>
 
@@ -5802,6 +5838,17 @@ SHA-256: `824a4aad44a54e245c67196817d67946734a2dc0eee0b0b6834a5b2a6ef352ce`
 | `owner` | not declared | none | [`{ kind: "owner" }`](#persistence-type-sha256-deebfc7c62177ea840f23c6362b8615bc78ffa93377dd5d243c04e541c413af5) |
 | `share-viewer` | not declared | `actor`: [`{ displayName?, providerId, subjectId, tenantId }`](#persistence-type-sha256-0a92c5bdfa06c2e2615b777728f3aa95f408d43b9012e7b754568311251db623); `shareId`: `string` | [`ShareViewerPrincipal`](#persistence-type-sha256-4d60dddaa65d3da8d4cd014d85ce3d2c2875664dd0433e331d8e9d395289686b) |
 
+<a id="persistence-type-sha256-8cccc58ab11a7f759d0f2269c6dc0f53ee586e7974015819166ece8ebc864df2"></a>
+
+### `union (2 variants)`
+
+SHA-256: `8cccc58ab11a7f759d0f2269c6dc0f53ee586e7974015819166ece8ebc864df2`
+
+One of:
+
+- [`{ candidateHash, domain, mode, revision, … }`](#persistence-type-sha256-25c7e4f2d1d7eaefe9e4922f055f6815fb3b525a0fdbd13611481a57e63d85d9)
+- [`{ disabled }`](#persistence-type-sha256-77d567ec5a140a3f1661cfd3722ad13ae10117b7a168dd7656c3591e5083f1a5)
+
 <a id="persistence-type-sha256-9947aa5938fe19a895298da412917acbf9ffb5093a73ab8baa257e6ae9e63a07"></a>
 
 ### `union (2 variants)`
@@ -5812,6 +5859,17 @@ One of:
 
 - [`{ compactionId, llmStreamCall, maxTokens?, model, … }`](#persistence-type-sha256-a99ec0993c62c058e50af9f68922202a3b54f5e259bc2abf1915a73381d2316d)
 - [`{ compactionId, maxTokens?, model, provider, … }`](#persistence-type-sha256-576a2de8355eb09850963ff5953420b172e274d9283666eb7d889097db120796)
+
+<a id="persistence-type-sha256-cf4e85c7097ae28974a88c36c05e3a437135ebef1f670fc93d2ecc5d5b2f3473"></a>
+
+### `union (2 variants)`
+
+SHA-256: `cf4e85c7097ae28974a88c36c05e3a437135ebef1f670fc93d2ecc5d5b2f3473`
+
+One of:
+
+- `"parallel"`
+- `"sequential"`
 
 <a id="persistence-type-sha256-f52615e9765acb75b591fbe8a49dce1c82c46416bb181b6b4d8063793f51fb82"></a>
 
@@ -6006,7 +6064,7 @@ Sources: [`packages/core/session/src/types.ts:369`](../packages/core/session/src
 
 SHA-256: `6e288c065c82a5a42280a17dfbb3fbdd52a0a03fa59ee18116b1cbca818ada3f`
 
-Sources: [`packages/subagent/harness2/src/types.ts:52`](../packages/subagent/harness2/src/types.ts)
+Sources: [`packages/subagent/harness2/src/types.ts:54`](../packages/subagent/harness2/src/types.ts)
 
 | Property | Presence | Type |
 |---|---|---|
@@ -6042,6 +6100,22 @@ Sources: [`packages/interaction/user-approval/src/types.ts:44`](../packages/inte
 | `id` | required | `string` |
 | `reason` | optional | `string` |
 | `toolName` | required | `string` |
+
+<a id="persistence-type-sha256-25c7e4f2d1d7eaefe9e4922f055f6815fb3b525a0fdbd13611481a57e63d85d9"></a>
+
+### `{ candidateHash, domain, mode, revision, … }`
+
+SHA-256: `25c7e4f2d1d7eaefe9e4922f055f6815fb3b525a0fdbd13611481a57e63d85d9`
+
+Sources: [`packages/subagent/harness2/src/types.ts:62`](../packages/subagent/harness2/src/types.ts)
+
+| Property | Presence | Type |
+|---|---|---|
+| `candidateHash` | required | `string` |
+| `domain` | required | `string` |
+| `mode` | required | [`union (2 variants)`](#persistence-type-sha256-cf4e85c7097ae28974a88c36c05e3a437135ebef1f670fc93d2ecc5d5b2f3473) |
+| `revision` | required | `number` |
+| `workspace` | required | `string` |
 
 <a id="persistence-type-sha256-4f91f187baeabef5c7950c4780d31bbe39f3345dff591a6cf26ac7e135ac1cf4"></a>
 
@@ -6163,7 +6237,7 @@ SHA-256: `cbbe8377ee744964537dbafd83607219e58ba79a13f6db0d0645c7ad3d5e8a09`
 
 SHA-256: `567277d4445beee9ab8123174ad9fc0ca3b849ee95df6bc9ffb3b78c4740c303`
 
-Sources: [`packages/subagent/harness2/src/types.ts:54`](../packages/subagent/harness2/src/types.ts)
+Sources: [`packages/subagent/harness2/src/types.ts:56`](../packages/subagent/harness2/src/types.ts)
 
 | Property | Presence | Type |
 |---|---|---|
@@ -6368,7 +6442,7 @@ Array of [`{ description, name }`](#persistence-type-sha256-83079c8a3f733ac3fa60
 
 SHA-256: `4a258feebe9ec7a9eb81bc13713db62edcee6129e7c0857ce067455f21c86a8f`
 
-Sources: [`packages/subagent/harness2/src/types.ts:56`](../packages/subagent/harness2/src/types.ts)
+Sources: [`packages/subagent/harness2/src/types.ts:58`](../packages/subagent/harness2/src/types.ts)
 
 | Property | Presence | Type |
 |---|---|---|
@@ -6393,6 +6467,18 @@ Sources: [`packages/experimental/hook-protocol/src/types.ts:19`](../packages/exp
 | `point` | required | `string` |
 | `turn` | required | `number` |
 
+<a id="persistence-type-sha256-77d567ec5a140a3f1661cfd3722ad13ae10117b7a168dd7656c3591e5083f1a5"></a>
+
+### `{ disabled }`
+
+SHA-256: `77d567ec5a140a3f1661cfd3722ad13ae10117b7a168dd7656c3591e5083f1a5`
+
+Sources: [`packages/subagent/harness2/src/types.ts:62`](../packages/subagent/harness2/src/types.ts)
+
+| Property | Presence | Type |
+|---|---|---|
+| `disabled` | required | `true` |
+
 <a id="persistence-type-sha256-0a92c5bdfa06c2e2615b777728f3aa95f408d43b9012e7b754568311251db623"></a>
 
 ### `{ displayName?, providerId, subjectId, tenantId }`
@@ -6414,7 +6500,7 @@ Sources: [`packages/experimental/liveshare/src/host/viewer-principal.ts:29`](../
 
 SHA-256: `62c79b63841167e939047d0fbe62dd0ba7f83a0a8abd477d0f97129e2259c99b`
 
-Sources: [`packages/subagent/harness2/src/types.ts:58`](../packages/subagent/harness2/src/types.ts)
+Sources: [`packages/subagent/harness2/src/types.ts:60`](../packages/subagent/harness2/src/types.ts)
 
 | Property | Presence | Type |
 |---|---|---|
@@ -8672,6 +8758,22 @@ SHA-256: `88b78649a4ec6791427750e6a68063d801951dfecda94a9ae0b3df512c7966ff`
 | `seq` | required | `number` |
 | `time` | required | `number` |
 | `type` | required | `"harness2/execution"` |
+
+<a id="persistence-type-sha256-d8b80b0836c7c267c05d6bb9d2e5a84ee736d6cfc18bef9c514a64934cdf78df"></a>
+
+<a id="persistence-type-eventharness2overlay"></a>
+
+### `{ type: "harness2/overlay" }`
+
+SHA-256: `d8b80b0836c7c267c05d6bb9d2e5a84ee736d6cfc18bef9c514a64934cdf78df`
+
+| Property | Presence | Type |
+|---|---|---|
+| `data` | required | [`union (2 variants)`](#persistence-type-sha256-8cccc58ab11a7f759d0f2269c6dc0f53ee586e7974015819166ece8ebc864df2) |
+| `ignorable` | optional | `true` |
+| `seq` | required | `number` |
+| `time` | required | `number` |
+| `type` | required | `"harness2/overlay"` |
 
 <a id="persistence-type-sha256-e65ad4343443164858c3b33843d2d2fd3b08caa3ebf0fc6ca932a0166c35ce32"></a>
 

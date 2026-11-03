@@ -1,0 +1,20 @@
+{
+  "formatVersion": 2,
+  "roots": [
+    {"key":"event:harness2/overlay","kind":"event","event":"harness2/overlay","surface":false,"digest":"d8b80b0836c7c267c05d6bb9d2e5a84ee736d6cfc18bef9c514a64934cdf78df"}
+  ],
+  "types": [],
+  "nodes": {
+    "027df4a94aacf8d7": {"kind":"literal","value":"harness2/overlay"},
+    "0400eef245a812a6": {"kind":"literal","value":"sequential"},
+    "0657d3ca5ac4e7bf": {"kind":"primitive","type":"number"},
+    "25c7e4f2d1d7eaef": {"kind":"object","properties":[{"name":"candidateHash","type":"4cd48f3e5108bd6e","optional":false},{"name":"domain","type":"4cd48f3e5108bd6e","optional":false},{"name":"mode","type":"cf4e85c7097ae289","optional":false},{"name":"revision","type":"0657d3ca5ac4e7bf","optional":false},{"name":"workspace","type":"4cd48f3e5108bd6e","optional":false}],"indices":[]},
+    "4cd48f3e5108bd6e": {"kind":"primitive","type":"string"},
+    "77d567ec5a140a3f": {"kind":"object","properties":[{"name":"disabled","type":"dacf3d5f3e4ff619","optional":false}],"indices":[]},
+    "8cccc58ab11a7f75": {"kind":"union","types":["25c7e4f2d1d7eaef","77d567ec5a140a3f"]},
+    "9a3a87039d589b2c": {"kind":"literal","value":"parallel"},
+    "cf4e85c7097ae289": {"kind":"union","types":["0400eef245a812a6","9a3a87039d589b2c"]},
+    "d8b80b0836c7c267": {"kind":"object","properties":[{"name":"data","type":"8cccc58ab11a7f75","optional":false},{"name":"ignorable","type":"dacf3d5f3e4ff619","optional":true},{"name":"seq","type":"0657d3ca5ac4e7bf","optional":false},{"name":"time","type":"0657d3ca5ac4e7bf","optional":false},{"name":"type","type":"027df4a94aacf8d7","optional":false}],"indices":[]},
+    "dacf3d5f3e4ff619": {"kind":"literal","value":true}
+  }
+}

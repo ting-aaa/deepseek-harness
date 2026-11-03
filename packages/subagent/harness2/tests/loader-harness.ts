@@ -23,6 +23,7 @@ import * as StorageSqlite from '@deepseek-ai/dsh-storage-sqlite'
 import Subagents from '@deepseek-ai/dsh-subagent'
 import * as Spawn from '@deepseek-ai/dsh-subagent-spawn-in-process'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
+import Skills from '@deepseek-ai/dsh-skill'
 import * as Executor from '@deepseek-ai/dsh-tool-executor-native'
 import Tools from '@deepseek-ai/dsh-tools'
 import WorkingDirectory from '@deepseek-ai/dsh-working-directory'
@@ -48,7 +49,7 @@ export async function bootHarness(
     tools: Tools, executor: Executor, agents: Agents, loop: AgentLoop, fs: FsLocal,
     workingDirectory: WorkingDirectory, persistence: Persistence, subagents: Subagents,
     spawn: Spawn, storage: Storage, storageSqlite: StorageSqlite, storageDomain: StorageDomain,
-    approval: Approval, harness2: Harness2,
+    approval: Approval, skills: Skills, harness2: Harness2,
     ...taskFiles ? { taskFiles: ToolFs } : {},
   }
   const configs: Record<string, object> = {
@@ -96,7 +97,7 @@ export async function bootHarness(
 }
 
 /** Read persisted plugin-owned records independently of the engine's returned result. */
-export function storedRecords(path: string, table: 'previews' | 'lessons' | 'runs' | 'checkpoints'): Record<string, unknown>[] {
+export function storedRecords(path: string, table: 'previews' | 'lessons' | 'runs' | 'checkpoints' | 'revisions' | 'bindings'): Record<string, unknown>[] {
   const db = new DatabaseSync(path, { readOnly: true })
   try {
     return db.prepare(`SELECT value FROM u_harness2_${table} ORDER BY key`).all()

@@ -3,14 +3,14 @@
 # After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write docs/upgrade-guide/v0.2.2-alpha.2/harness2-library/guide.md
 /:
-  en: dac4c7485bb3ceac
-  zh: d9234058686d8a85
-/harness-library-version-2:
-  en: 72a48972d13bc265
-  zh: 9824396821206d5f
-/harness-library-version-2/change:
-  en: 043f56045e137ce3
-  zh: 98ae48df6c3523ab
-/harness-library-version-2/migration:
-  en: 527c14f21b59acd3
-  zh: 794d5b9af2b18c1a
+  en: 2d17b5a624f682ba
+  zh: 65cedcefcc95f85b
+/harness-library-version-3:
+  en: 55d88af41b7772ad
+  zh: 2fc88725df0b93fe
+/harness-library-version-3/change:
+  en: 8f8b049b5e7c7055
+  zh: 6b584c8cea0271d6
+/harness-library-version-3/migration:
+  en: b1cf3bf8c3c55037
+  zh: bd90b792caa9d1c2
